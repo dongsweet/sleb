@@ -33,10 +33,15 @@ npm run dev:web
 
 Docker Compose is included for the production-like local stack, but this machine does not currently have Docker installed.
 
+For the `sleb.sweethome.vip` test server, use:
+
+```bash
+docker compose -f docker-compose.server.yml up -d --build
+```
+
 ## Services
 
 - Web: `http://localhost:3000`
 - API: `http://localhost:4000`
 - API health: `http://localhost:4000/health`
 - Architecture note: `docs/architecture.md`
-
