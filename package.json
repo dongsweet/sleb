@@ -1,0 +1,32 @@
+{
+  "name": "sleb-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modernized SLEB platform scaffold.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @sleb/api",
+    "dev:api": "npm run dev --workspace @sleb/api",
+    "dev:web": "npm run dev --workspace @sleb/web",
+    "dev:worker": "npm run dev --workspace @sleb/worker",
+    "build": "npm run build --workspace @sleb/shared && npm run build --workspace @sleb/db && npm run build --workspace @sleb/api && npm run build --workspace @sleb/worker && npm run build --workspace @sleb/web",
+    "typecheck": "npm run build --workspace @sleb/shared && npm run build --workspace @sleb/db && npm run typecheck --workspace @sleb/api && npm run typecheck --workspace @sleb/worker && npm run typecheck --workspace @sleb/web",
+    "lint": "npm run lint --workspace @sleb/api && npm run lint --workspace @sleb/worker && npm run lint --workspace @sleb/web",
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "postcss": "^8.5.14",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

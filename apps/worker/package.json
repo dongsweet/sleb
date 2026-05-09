@@ -1,0 +1,19 @@
+{
+  "name": "@sleb/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --conditions=development src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@sleb/shared": "*",
+    "bullmq": "^5.51.1",
+    "dotenv": "^16.5.0",
+    "ioredis": "^5.6.1"
+  }
+}
