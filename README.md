@@ -36,7 +36,7 @@ Docker Compose is included for the production-like local stack, but this machine
 For the `sleb.sweethome.vip` test server, use:
 
 ```bash
-docker compose -f docker-compose.server.yml up -d --build
+bash scripts/deploy-server.sh
 ```
 
 ## Services
