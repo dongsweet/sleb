@@ -9,12 +9,9 @@ compose=(docker compose -f docker-compose.server.yml)
 
 git pull --ff-only
 
-# Build serially so small test servers do not get saturated by concurrent Node builds.
+# Build once; web/api/worker all reuse the same runtime image.
 "${compose[@]}" build api
-"${compose[@]}" build worker
-"${compose[@]}" build web
 
 "${compose[@]}" up -d postgres valkey minio
-"${compose[@]}" up -d api worker web
+"${compose[@]}" up -d --no-build api worker web
 "${compose[@]}" ps
-

@@ -45,9 +45,10 @@ services:
     restart: unless-stopped
 
   api:
+    image: sleb-app:latest
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: Dockerfile.server
     container_name: sleb-api
     environment:
       NODE_ENV: production
@@ -67,9 +68,7 @@ services:
     restart: unless-stopped
 
   worker:
-    build:
-      context: .
-      dockerfile: apps/worker/Dockerfile
+    image: sleb-app:latest
     container_name: sleb-worker
     environment:
       NODE_ENV: production
@@ -85,9 +84,7 @@ services:
     restart: unless-stopped
 
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+    image: sleb-app:latest
     container_name: sleb-web
     environment:
       NODE_ENV: production
@@ -112,4 +109,3 @@ volumes:
   sleb-postgres-data:
   sleb-valkey-data:
   sleb-minio-data:
-
