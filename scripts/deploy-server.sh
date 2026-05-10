@@ -5,7 +5,13 @@ cd "$(dirname "$0")/.."
 
 export COMPOSE_PARALLEL_LIMIT=1
 
-compose=(docker compose -f docker-compose.server.yml)
+if docker info >/dev/null 2>&1; then
+  docker_cmd=(docker)
+else
+  docker_cmd=(sudo docker)
+fi
+
+compose=("${docker_cmd[@]}" compose -f docker-compose.server.yml)
 
 git pull --ff-only
 
