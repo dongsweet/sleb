@@ -39,6 +39,19 @@ For the `sleb.sweethome.vip` test server, use:
 bash scripts/deploy-server.sh
 ```
 
+For a low-resource server, build an artifact locally and install only production dependencies on the server:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/package-runtime.ps1
+```
+
+Upload `deploy/sleb-runtime.tar.gz`, extract it on the server, then run:
+
+```bash
+bash scripts/install-runtime-deps.sh
+docker compose -f docker-compose.artifact.yml up -d
+```
+
 ## Services
 
 - Web: `http://localhost:3000`

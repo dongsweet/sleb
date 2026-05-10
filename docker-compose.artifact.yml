@@ -1,0 +1,121 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: sleb-postgres
+    environment:
+      POSTGRES_DB: sleb
+      POSTGRES_USER: sleb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sleb}
+    volumes:
+      - sleb-postgres-data:/var/lib/postgresql/data
+    networks:
+      - sleb-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sleb -d sleb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: sleb-valkey
+    volumes:
+      - sleb-valkey-data:/data
+    networks:
+      - sleb-internal
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: sleb-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sleb}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-sleb-secret}
+    volumes:
+      - sleb-minio-data:/data
+    networks:
+      - sleb-internal
+    restart: unless-stopped
+
+  api:
+    image: node:22-alpine
+    container_name: sleb-api
+    working_dir: /app
+    command: npm run start --workspace @sleb/api
+    environment:
+      NODE_ENV: production
+      API_PORT: 4000
+      DATABASE_URL: postgres://sleb:${POSTGRES_PASSWORD:-sleb}@postgres:5432/sleb
+      VALKEY_URL: redis://valkey:6379
+    volumes:
+      - ./:/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    networks:
+      - sleb-internal
+      - caddy-net
+    ports:
+      - "127.0.0.1:4091:4000"
+    restart: unless-stopped
+
+  worker:
+    image: node:22-alpine
+    container_name: sleb-worker
+    working_dir: /app
+    command: npm run start --workspace @sleb/worker
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://sleb:${POSTGRES_PASSWORD:-sleb}@postgres:5432/sleb
+      VALKEY_URL: redis://valkey:6379
+    volumes:
+      - ./:/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    networks:
+      - sleb-internal
+    restart: unless-stopped
+
+  web:
+    image: node:22-alpine
+    container_name: sleb-web
+    working_dir: /app
+    command: npm run start --workspace @sleb/web
+    environment:
+      NODE_ENV: production
+      PUBLIC_WEB_URL: https://sleb.sweethome.vip
+      PUBLIC_API_URL: https://sleb.sweethome.vip/api
+    volumes:
+      - ./:/app:ro
+    depends_on:
+      - api
+    networks:
+      - sleb-internal
+      - caddy-net
+    ports:
+      - "127.0.0.1:4090:3000"
+    restart: unless-stopped
+
+networks:
+  sleb-internal:
+  caddy-net:
+    external: true
+    name: work_caddy-net
+
+volumes:
+  sleb-postgres-data:
+  sleb-valkey-data:
+  sleb-minio-data:
+
