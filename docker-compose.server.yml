@@ -50,6 +50,7 @@ services:
       context: .
       dockerfile: Dockerfile.server
     container_name: sleb-api
+    command: npm run start --workspace @sleb/api
     environment:
       NODE_ENV: production
       API_PORT: 4000
@@ -70,6 +71,7 @@ services:
   worker:
     image: sleb-app:latest
     container_name: sleb-worker
+    command: npm run start --workspace @sleb/worker
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://sleb:${POSTGRES_PASSWORD:-sleb}@postgres:5432/sleb
@@ -86,6 +88,7 @@ services:
   web:
     image: sleb-app:latest
     container_name: sleb-web
+    command: npm run start --workspace @sleb/web
     environment:
       NODE_ENV: production
       PUBLIC_WEB_URL: https://sleb.sweethome.vip
