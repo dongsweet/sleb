@@ -72,6 +72,14 @@ const aiKinds: Array<{ value: AiSuggestionKind; label: string }> = [
   { value: "image_prompt", label: "Image prompt" },
 ];
 
+const contentPublicPaths: Partial<Record<ContentType, string>> = {
+  event: "/events",
+  news: "/news",
+  grant: "/grants-and-incentives",
+  incentive: "/grants-and-incentives",
+  publication: "/publications",
+};
+
 export function ContentDeskClient() {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [counts, setCounts] =
@@ -152,7 +160,7 @@ export function ContentDeskClient() {
     }
   }
 
-  async function loadItems() {
+  async function loadItems(preferredId = selectedId) {
     try {
       const response = await fetch("/api/content/items", {
         cache: "no-store",
@@ -173,7 +181,7 @@ export function ContentDeskClient() {
       setItems(data.items);
       setCounts({ ...emptyCounts(), ...data.counts });
       const nextSelected =
-        data.items.find((item) => item.id === selectedId) ?? data.items[0];
+        data.items.find((item) => item.id === preferredId) ?? data.items[0];
 
       if (nextSelected) {
         setSelectedId(nextSelected.id);
@@ -242,48 +250,52 @@ export function ContentDeskClient() {
     event.preventDefault();
     setIsBusy(true);
 
-    const payload = {
-      type: form.type,
-      title: form.title,
-      slug: form.slug,
-      summary: form.summary,
-      body: form.body,
-      status: form.status,
-      heroImage: form.heroImage || undefined,
-      metadata: form.metadata,
-      seo: {
-        title: form.seoTitle || undefined,
-        description: form.seoDescription || undefined,
-      },
-    };
-
     try {
-      const response = await fetch(
-        form.id ? `/api/content/items/${form.id}` : "/api/content/items",
-        {
-          method: form.id ? "PATCH" : "POST",
-          credentials: "include",
-          headers: contentHeaders(true),
-          body: JSON.stringify(payload),
-        },
-      );
+      const item = await saveCurrentContent();
 
-      if (response.status === 401) {
-        redirectToLogin();
+      if (!item) {
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(`Save failed with ${response.status}`);
-      }
-
-      const data = (await response.json()) as ContentDetailResponse;
-      setSelectedId(data.item.id);
-      setForm(toForm(data.item));
-      await loadItems();
-      setNotice(`Saved "${data.item.title}".`);
+      await loadItems(item.id);
+      setNotice(buildSavedNotice(item));
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Save failed.");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function saveAndPublish() {
+    if (!canPublishContent) {
+      setNotice("Content Publisher permission is required to publish content.");
+      return;
+    }
+
+    setIsBusy(true);
+
+    try {
+      const saved = await saveCurrentContent();
+
+      if (!saved) {
+        return;
+      }
+
+      const published =
+        saved.status === "published" ? saved : await publishContent(saved.id);
+
+      if (!published) {
+        return;
+      }
+
+      setSelectedId(published.id);
+      setForm(toForm(published));
+      await loadItems(published.id);
+      setNotice(buildPublishedNotice(published));
+    } catch (error) {
+      setNotice(
+        error instanceof Error ? error.message : "Save and publish failed.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -316,10 +328,8 @@ export function ContentDeskClient() {
 
       const data = (await response.json()) as ContentDetailResponse;
       setForm(toForm(data.item));
-      await loadItems();
-      setNotice(
-        `${contentStatusLabels[data.item.status]}: "${data.item.title}".`,
-      );
+      await loadItems(data.item.id);
+      setNotice(buildWorkflowNotice(action, data.item));
     } catch (error) {
       setNotice(
         error instanceof Error ? error.message : "Workflow action failed.",
@@ -438,6 +448,54 @@ export function ContentDeskClient() {
     }
 
     return headers;
+  }
+
+  async function saveCurrentContent() {
+    const response = await fetch(
+      form.id ? `/api/content/items/${form.id}` : "/api/content/items",
+      {
+        method: form.id ? "PATCH" : "POST",
+        credentials: "include",
+        headers: contentHeaders(true),
+        body: JSON.stringify(buildContentPayload(form)),
+      },
+    );
+
+    if (response.status === 401) {
+      redirectToLogin();
+      return undefined;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Save failed with ${response.status}`);
+    }
+
+    const data = (await response.json()) as ContentDetailResponse;
+    setSelectedId(data.item.id);
+    setForm(toForm(data.item));
+
+    return data.item;
+  }
+
+  async function publishContent(id: string) {
+    const response = await fetch(`/api/content/items/${id}/publish`, {
+      method: "POST",
+      credentials: "include",
+      headers: contentHeaders(true),
+      body: "{}",
+    });
+
+    if (response.status === 401) {
+      redirectToLogin();
+      return undefined;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Publish failed with ${response.status}`);
+    }
+
+    const data = (await response.json()) as ContentDetailResponse;
+    return data.item;
   }
 
   async function logout() {
@@ -579,6 +637,15 @@ export function ContentDeskClient() {
                 Save
               </button>
               <button
+                className="contentActionPublish"
+                disabled={isBusy || !canPublishContent}
+                onClick={saveAndPublish}
+                type="button"
+              >
+                Save &amp; Publish
+              </button>
+              <button
+                className="contentActionSecondary"
                 disabled={isBusy || !form.id || !user}
                 onClick={() => changeWorkflow("submit")}
                 type="button"
@@ -586,6 +653,7 @@ export function ContentDeskClient() {
                 Submit
               </button>
               <button
+                className="contentActionPublish"
                 disabled={isBusy || !form.id || !canPublishContent}
                 onClick={() => changeWorkflow("publish")}
                 type="button"
@@ -593,6 +661,7 @@ export function ContentDeskClient() {
                 Publish
               </button>
               <button
+                className="contentActionDanger"
                 disabled={isBusy || !form.id || !canPublishContent}
                 onClick={() => changeWorkflow("unpublish")}
                 type="button"
@@ -600,6 +669,30 @@ export function ContentDeskClient() {
                 Unpublish
               </button>
             </div>
+          </div>
+          <div
+            className={`contentPublishHint ${
+              form.status === "published" ? "isPublished" : ""
+            }`}
+          >
+            {form.status === "published" && form.slug ? (
+              <>
+                Visible on customer pages at{" "}
+                <a
+                  href={getPublicContentHref(form)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {getPublicContentHref(form)}
+                </a>
+                .
+              </>
+            ) : (
+              <>
+                Saved drafts stay internal. Use Save &amp; Publish to make this
+                content visible on customer pages.
+              </>
+            )}
           </div>
 
           <div className="contentFormGrid">
@@ -865,6 +958,57 @@ function formatRole(role: AuthUser["role"]) {
   };
 
   return labels[role];
+}
+
+function buildContentPayload(form: ContentFormState) {
+  return {
+    type: form.type,
+    title: form.title,
+    slug: form.slug,
+    summary: form.summary,
+    body: form.body,
+    status: form.status,
+    heroImage: form.heroImage || undefined,
+    metadata: form.metadata,
+    seo: {
+      title: form.seoTitle || undefined,
+      description: form.seoDescription || undefined,
+    },
+  };
+}
+
+function buildSavedNotice(item: ContentItem) {
+  if (item.status === "published") {
+    return `Saved "${item.title}" and updated ${getPublicContentHref(item)}.`;
+  }
+
+  return `Saved "${item.title}" as ${
+    contentStatusLabels[item.status]
+  }. Publish it to show on customer pages.`;
+}
+
+function buildPublishedNotice(item: ContentItem) {
+  return `Published "${item.title}" to ${getPublicContentHref(item)}.`;
+}
+
+function buildWorkflowNotice(
+  action: "submit" | "publish" | "unpublish",
+  item: ContentItem,
+) {
+  if (action === "publish") {
+    return buildPublishedNotice(item);
+  }
+
+  if (action === "unpublish") {
+    return `Unpublished "${item.title}". It is no longer visible on customer pages.`;
+  }
+
+  return `${contentStatusLabels[item.status]}: "${item.title}".`;
+}
+
+function getPublicContentHref(item: Pick<ContentFormState, "type" | "slug">) {
+  const basePath = contentPublicPaths[item.type] ?? "/news";
+  return `${basePath}/${item.slug}`;
 }
 
 function redirectToLogin() {

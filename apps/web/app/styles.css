@@ -1792,15 +1792,15 @@ small {
   font-weight: 800;
 }
 
-.contentActions button:nth-child(2) {
+.contentActions .contentActionSecondary {
   background: var(--teal);
 }
 
-.contentActions button:nth-child(3) {
+.contentActions .contentActionPublish {
   background: var(--blue);
 }
 
-.contentActions button:nth-child(4) {
+.contentActions .contentActionDanger {
   background: var(--coral);
 }
 
@@ -1971,6 +1971,29 @@ small {
   background: #edf4f1;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.contentPublishHint {
+  padding: 12px 14px;
+  border: 1px solid rgba(31, 94, 140, 0.18);
+  border-radius: 8px;
+  background: rgba(31, 94, 140, 0.08);
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.contentPublishHint.isPublished {
+  border-color: rgba(38, 127, 92, 0.22);
+  background: rgba(56, 160, 116, 0.1);
+  color: var(--green);
+}
+
+.contentPublishHint a {
+  color: inherit;
+  font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .contentEditorHeader {
