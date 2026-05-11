@@ -71,10 +71,10 @@ small {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 28px;
+  gap: 18px;
   min-height: 72px;
   padding: 14px max(24px, calc((100vw - 1180px) / 2));
   border-bottom: 1px solid rgba(217, 223, 220, 0.9);
@@ -114,14 +114,14 @@ small {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
 }
 
 .topNav a {
-  padding: 9px 12px;
+  padding: 9px 10px;
   border-radius: 8px;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-weight: 700;
 }
 
@@ -130,6 +130,20 @@ small {
   background: var(--white);
   color: var(--green);
   box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.headerCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: var(--green);
+  color: var(--white);
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .hero {
@@ -151,6 +165,111 @@ small {
     url('https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=2200&q=80');
   background-position: center;
   background-size: cover;
+}
+
+.homeHero {
+  min-height: 620px;
+  background:
+    linear-gradient(90deg, rgba(10, 40, 30, 0.94), rgba(10, 86, 73, 0.56)),
+    url('https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=2400&q=80');
+  background-position: center;
+  background-size: cover;
+  color: var(--white);
+}
+
+.homeHeroOverlay {
+  min-height: 620px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 44px;
+  align-items: end;
+  padding: 82px max(24px, calc((100vw - 1180px) / 2));
+}
+
+.homeHeroCopy {
+  max-width: 820px;
+}
+
+.homeHero h1 {
+  font-size: 4.8rem;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.primaryButton,
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-weight: 850;
+}
+
+.primaryButton {
+  background: #ffd166;
+  color: #1c241d;
+}
+
+.secondaryButton {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  color: var(--white);
+}
+
+.homeHeroPanel {
+  display: grid;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 8px;
+  background: rgba(10, 22, 18, 0.58);
+  backdrop-filter: blur(12px);
+}
+
+.homeHeroPanel span {
+  color: #ffd166;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.homeHeroPanel strong {
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
+.quickStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.quickStats div {
+  display: grid;
+  gap: 5px;
+  min-height: 112px;
+  align-content: center;
+  padding: 22px 24px;
+  background: var(--white);
+}
+
+.quickStats strong {
+  color: var(--green);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.quickStats span {
+  color: var(--muted);
+  font-size: 0.92rem;
 }
 
 .heroCopy {
@@ -211,6 +330,45 @@ small {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.serviceTile {
+  display: grid;
+  min-height: 330px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.serviceTile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.serviceTile > span {
+  min-height: 170px;
+  background-position: center;
+  background-size: cover;
+}
+
+.serviceTile div {
+  padding: 18px;
+}
+
+.serviceTile p,
+.toolCard p,
+.updateCard small {
+  color: var(--muted);
 }
 
 .routeColumn,
@@ -367,6 +525,164 @@ small {
   box-shadow: var(--shadow);
 }
 
+.toolStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.toolCard {
+  min-height: 190px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(241, 247, 245, 0.96)),
+    radial-gradient(circle at top right, rgba(8, 124, 122, 0.18), transparent 42%);
+}
+
+.homeSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.aboutPanel,
+.membershipPanel {
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.aboutPanel p,
+.membershipPanel p {
+  color: var(--muted);
+}
+
+.missionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.missionGrid div {
+  display: grid;
+  gap: 8px;
+  min-height: 145px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #f3f6f2;
+}
+
+.missionGrid strong {
+  color: var(--green);
+}
+
+.missionGrid span {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.homePlanList {
+  display: grid;
+  gap: 10px;
+}
+
+.homePlanList a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.homePlanList a:last-child {
+  border-bottom: 0;
+}
+
+.homePlanList span {
+  font-weight: 800;
+}
+
+.homePlanList strong {
+  color: var(--teal);
+}
+
+.updateGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.updateCard {
+  display: grid;
+  gap: 12px;
+  min-height: 210px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.updateCard span {
+  color: var(--coral);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.subscribeBand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+  gap: 28px;
+  align-items: center;
+  padding: 46px max(24px, calc((100vw - 1180px) / 2));
+  background: var(--green);
+  color: var(--white);
+}
+
+.subscribeBand h2 {
+  margin-bottom: 0;
+}
+
+.subscribeForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.subscribeForm label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.subscribeForm input,
+.subscribeForm button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.subscribeForm input {
+  min-width: 0;
+  padding: 0 14px;
+}
+
+.subscribeForm button {
+  padding: 0 18px;
+  background: #ffd166;
+  color: #182119;
+  font-weight: 850;
+}
+
 .metric {
   padding: 22px;
 }
@@ -474,8 +790,26 @@ small {
   .triGrid,
   .adminGrid,
   .metricGrid,
-  .roleGrid {
+  .roleGrid,
+  .serviceGrid,
+  .toolStrip,
+  .updateGrid,
+  .missionGrid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .homeHeroOverlay,
+  .homeSplit,
+  .subscribeBand {
+    grid-template-columns: 1fr;
+  }
+
+  .homeHero h1 {
+    font-size: 3.2rem;
+  }
+
+  .quickStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -486,12 +820,16 @@ small {
 
   .siteHeader {
     position: static;
-    display: block;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .topNav {
     justify-content: flex-start;
-    margin-top: 14px;
+  }
+
+  .headerCta {
+    width: 100%;
   }
 
   .hero {
@@ -510,7 +848,34 @@ small {
   .triGrid,
   .adminGrid,
   .metricGrid,
-  .roleGrid {
+  .roleGrid,
+  .serviceGrid,
+  .toolStrip,
+  .updateGrid,
+  .missionGrid,
+  .quickStats {
+    grid-template-columns: 1fr;
+  }
+
+  .homeHero,
+  .homeHeroOverlay {
+    min-height: 560px;
+  }
+
+  .homeHeroOverlay {
+    padding-top: 48px;
+    padding-bottom: 40px;
+  }
+
+  .homeHero h1 {
+    font-size: 2.45rem;
+  }
+
+  .homeHeroPanel {
+    display: none;
+  }
+
+  .subscribeForm {
     grid-template-columns: 1fr;
   }
 

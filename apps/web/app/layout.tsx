@@ -2,8 +2,8 @@ import './styles.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'SLEB Platform',
-  description: 'Modern SLEB public site, membership portal, and publishing admin scaffold'
+  title: 'SLEB Smart Hub',
+  description: 'Super low energy building directories, resources, tools, and membership services'
 };
 
 export default function RootLayout({

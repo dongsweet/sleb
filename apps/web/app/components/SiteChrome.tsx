@@ -13,7 +13,7 @@ export function SiteChrome({ children, activeArea }: SiteChromeProps) {
           <span className="brandSymbol">S</span>
           <span>
             <strong>SLEB</strong>
-            <small>Modernization</small>
+            <small>Smart Hub</small>
           </span>
         </a>
         <nav aria-label="Primary navigation" className="topNav">
@@ -27,13 +27,20 @@ export function SiteChrome({ children, activeArea }: SiteChromeProps) {
             </a>
           ))}
         </nav>
+        <a className="headerCta" href="/membership/register">
+          Sign Up
+        </a>
       </header>
       {children}
       <footer className="siteFooter">
-        <span>SLEB platform workspace</span>
+        <span>SLEB Smart Hub</span>
+        <a href="/about">About</a>
+        <a href="/news">News</a>
+        <a href="/events">Events</a>
         <a href="/sitemap">Sitemap</a>
         <a href="/privacy-policy">Privacy</a>
         <a href="/terms-and-conditions">Terms</a>
+        <a href="/admin">Admin</a>
       </footer>
     </>
   );

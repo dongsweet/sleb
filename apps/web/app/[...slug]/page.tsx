@@ -40,8 +40,26 @@ export default async function PublicRoutePage({ params }: PublicRouteProps) {
     notFound();
   }
 
+  let activeArea: string | undefined;
+
+  if (page.path.startsWith('buildings')) {
+    activeArea = 'Buildings';
+  } else if (page.path.startsWith('technologies')) {
+    activeArea = 'Technologies';
+  } else if (page.path.startsWith('services')) {
+    activeArea = 'Services';
+  } else if (page.path.startsWith('ai-calculator')) {
+    activeArea = 'AI Calculator';
+  } else if (page.path.startsWith('membership')) {
+    activeArea = 'Membership';
+  } else if (page.path.startsWith('account')) {
+    activeArea = 'Login';
+  } else if (page.path === 'about') {
+    activeArea = 'About';
+  }
+
   return (
-    <SiteChrome activeArea={page.group === 'Directories' ? 'Directories' : undefined}>
+    <SiteChrome activeArea={activeArea}>
       <main>
         <Hero kicker={page.kicker} summary={page.summary} title={page.title} />
         <PageSummary page={page} />

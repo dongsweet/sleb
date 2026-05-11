@@ -36,11 +36,14 @@ export type PublishingRole = {
 };
 
 export const primaryNav = [
-  { label: 'Directories', href: '/buildings/green-mark-directory' },
-  { label: 'Resources', href: '/news' },
-  { label: 'Tools', href: '/ai-calculator' },
+  { label: 'Home', href: '/' },
+  { label: 'About', href: '/about' },
+  { label: 'Buildings', href: '/buildings/green-mark-directory' },
+  { label: 'Technologies', href: '/technologies' },
+  { label: 'Services', href: '/services' },
+  { label: 'AI Calculator', href: '/ai-calculator' },
   { label: 'Membership', href: '/membership' },
-  { label: 'Admin', href: '/admin' }
+  { label: 'Login', href: '/account/login' }
 ] as const;
 
 export const publicPages: PublicPage[] = [
