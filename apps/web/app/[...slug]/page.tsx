@@ -4,6 +4,8 @@ import { Hero, PageSummary, WorkbenchPreview } from '../components/PageBlocks';
 import { SiteChrome } from '../components/SiteChrome';
 import { getPublicPage, publicPages } from '../data/site';
 
+const contentOwnedPaths = new Set(['events', 'grants-and-incentives', 'news']);
+
 type PublicRouteProps = {
   params: Promise<{
     slug: string[];
@@ -11,9 +13,11 @@ type PublicRouteProps = {
 };
 
 export function generateStaticParams() {
-  return publicPages.map((page) => ({
-    slug: page.path.split('/')
-  }));
+  return publicPages
+    .filter((page) => !contentOwnedPaths.has(page.path))
+    .map((page) => ({
+      slug: page.path.split('/')
+    }));
 }
 
 export async function generateMetadata({ params }: PublicRouteProps): Promise<Metadata> {
