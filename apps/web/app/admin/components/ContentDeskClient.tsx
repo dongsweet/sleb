@@ -12,7 +12,7 @@ import {
   type MediaAsset,
 } from "@sleb/shared/content";
 import type { ChangeEvent, FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ContentListResponse = {
   items: ContentItem[];
@@ -99,6 +99,7 @@ export function ContentDeskClient() {
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState<AuthUser | undefined>();
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedConfig = contentTypeConfigs.find(
     (config) => config.type === form.type,
@@ -440,6 +441,38 @@ export function ContentDeskClient() {
     setNotice(`Selected "${asset.filename}" as hero image.`);
   }
 
+  function clearHeroImage() {
+    setForm((current) => ({ ...current, heroImage: "" }));
+    setNotice("Hero image cleared.");
+  }
+
+  function insertBodyBlock(markup: string, fallback = "Text") {
+    const textarea = bodyTextareaRef.current;
+    const start = textarea?.selectionStart ?? form.body.length;
+    const end = textarea?.selectionEnd ?? start;
+    const before = form.body.slice(0, start);
+    const selected = form.body.slice(start, end);
+    const after = form.body.slice(end);
+    const block = markup.includes("$selection")
+      ? markup.replace("$selection", selected || fallback)
+      : markup;
+    const prefix = before && !before.endsWith("\n\n") ? "\n\n" : "";
+    const suffix = after && !after.startsWith("\n\n") ? "\n\n" : "";
+    const nextBody = `${before}${prefix}${block}${suffix}${after}`;
+    const nextCursor = before.length + prefix.length + block.length;
+
+    setForm((current) => ({ ...current, body: nextBody }));
+    window.requestAnimationFrame(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(nextCursor, nextCursor);
+    });
+  }
+
+  function insertBodyImage(asset: MediaAsset) {
+    insertBodyBlock(`![${asset.altText || asset.filename}](${asset.url})`);
+    setNotice(`Inserted "${asset.filename}" into the body.`);
+  }
+
   function contentHeaders(withJson = false) {
     const headers: Record<string, string> = {};
 
@@ -766,30 +799,103 @@ export function ContentDeskClient() {
             />
           </label>
 
-          <label>
+          <label className="contentBodyField">
             Body
+            <div aria-label="Body formatting" className="contentBodyToolbar">
+              <button
+                onClick={() => insertBodyBlock("## $selection", "Heading")}
+                title="Heading"
+                type="button"
+              >
+                H2
+              </button>
+              <button
+                onClick={() => insertBodyBlock("### $selection", "Subheading")}
+                title="Subheading"
+                type="button"
+              >
+                H3
+              </button>
+              <button
+                onClick={() => insertBodyBlock("- $selection", "List item")}
+                title="List item"
+                type="button"
+              >
+                List
+              </button>
+              <button
+                onClick={() => insertBodyBlock("1. $selection", "List item")}
+                title="Numbered list item"
+                type="button"
+              >
+                1.
+              </button>
+              <button
+                onClick={() => insertBodyBlock("> $selection", "Quote text")}
+                title="Quote"
+                type="button"
+              >
+                Quote
+              </button>
+              <button
+                onClick={() =>
+                  insertBodyBlock(
+                    "[$selection](https://example.com)",
+                    "Link text",
+                  )
+                }
+                title="Link"
+                type="button"
+              >
+                Link
+              </button>
+            </div>
             <textarea
               onChange={(event) =>
                 setForm((current) => ({ ...current, body: event.target.value }))
               }
+              ref={bodyTextareaRef}
               rows={10}
               value={form.body}
             />
           </label>
 
           <div className="contentFormGrid">
-            <label>
-              Hero image URL
-              <input
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    heroImage: event.target.value,
-                  }))
-                }
-                value={form.heroImage}
-              />
-            </label>
+            <div className="contentHeroManager">
+              <div>
+                <span>Hero image</span>
+                <p>
+                  {form.heroImage ? "Image selected." : "No image selected."}
+                </p>
+              </div>
+              {form.heroImage ? (
+                <img
+                  alt=""
+                  className="contentHeroPreview"
+                  src={form.heroImage}
+                />
+              ) : (
+                <div className="contentHeroPlaceholder">No image</div>
+              )}
+              <div className="contentHeroActions">
+                <label className="contentInlineUpload">
+                  Upload
+                  <input
+                    accept="image/*"
+                    disabled={isBusy || !user}
+                    onChange={uploadHeroImage}
+                    type="file"
+                  />
+                </label>
+                <button
+                  disabled={isBusy || !form.heroImage}
+                  onClick={clearHeroImage}
+                  type="button"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
             <label>
               SEO title
               <input
@@ -850,7 +956,7 @@ export function ContentDeskClient() {
           <section>
             <h3>Media Library</h3>
             <label className="mediaUpload">
-              Upload hero image
+              Upload image
               <input
                 accept="image/*"
                 disabled={isBusy || !user}
@@ -858,19 +964,32 @@ export function ContentDeskClient() {
                 type="file"
               />
             </label>
-            {form.heroImage ? (
-              <img alt="" className="contentHeroPreview" src={form.heroImage} />
-            ) : null}
             <div className="mediaAssetList">
-              {mediaAssets.slice(0, 5).map((asset) => (
-                <button
-                  key={asset.id}
-                  onClick={() => useHeroImage(asset)}
-                  type="button"
-                >
-                  <span>{asset.filename}</span>
-                  <small>{formatFileSize(asset.sizeBytes)}</small>
-                </button>
+              {mediaAssets.slice(0, 8).map((asset) => (
+                <div className="mediaAssetItem" key={asset.id}>
+                  <button
+                    className="mediaAssetPreview"
+                    onClick={() => useHeroImage(asset)}
+                    type="button"
+                  >
+                    {asset.mimeType.startsWith("image/") ? (
+                      <img alt="" src={asset.url} />
+                    ) : null}
+                    <span>{asset.filename}</span>
+                    <small>{formatFileSize(asset.sizeBytes)}</small>
+                  </button>
+                  <div className="mediaAssetActions">
+                    <button onClick={() => useHeroImage(asset)} type="button">
+                      Hero
+                    </button>
+                    <button
+                      onClick={() => insertBodyImage(asset)}
+                      type="button"
+                    >
+                      Body
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </section>

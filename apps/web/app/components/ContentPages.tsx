@@ -1,9 +1,10 @@
 import {
   contentTypeConfigs,
   type ContentItem,
-  type ContentType
-} from '@sleb/shared/content';
-import { getContentHref } from '../data/content';
+  type ContentType,
+} from "@sleb/shared/content";
+import { getContentHref } from "../data/content";
+import { RichContent } from "./RichContent";
 
 type ContentCollectionPageProps = {
   eyebrow: string;
@@ -22,7 +23,7 @@ export function ContentCollectionPage({
   eyebrow,
   title,
   summary,
-  items
+  items,
 }: ContentCollectionPageProps) {
   return (
     <section className="contentPublic">
@@ -62,7 +63,7 @@ export function ContentCollectionPage({
 export function ContentArticlePage({
   item,
   backHref,
-  backLabel
+  backLabel,
 }: ContentArticlePageProps) {
   return (
     <article className="contentArticle">
@@ -83,14 +84,7 @@ export function ContentArticlePage({
       {item.heroImage ? (
         <img alt="" className="contentHeroImage" src={item.heroImage} />
       ) : null}
-      <div className="contentBody">
-        {item.body
-          .split(/\n{2,}/)
-          .filter(Boolean)
-          .map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
-      </div>
+      <RichContent body={item.body} />
       {Object.keys(item.metadata).length > 0 ? (
         <dl className="contentMetadata">
           {Object.entries(item.metadata).map(([key, value]) => (
@@ -112,16 +106,16 @@ function getTypeLabel(type: ContentType) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-SG', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
+  return new Intl.DateTimeFormat("en-SG", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(value));
 }
 
 function formatMetadataKey(value: string) {
   return value
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/[_-]+/g, ' ')
+    .replace(/([A-Z])/g, " $1")
+    .replace(/[_-]+/g, " ")
     .replace(/^./, (letter) => letter.toUpperCase());
 }
