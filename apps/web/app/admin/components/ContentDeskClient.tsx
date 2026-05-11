@@ -1,19 +1,18 @@
-'use client';
+"use client";
 
 import {
   contentStatusLabels,
   contentTypeConfigs,
-  seedContentItems,
   seedTechnologyListings,
   type AiSuggestion,
   type AiSuggestionKind,
   type ContentItem,
   type ContentStatus,
   type ContentType,
-  type MediaAsset
-} from '@sleb/shared/content';
-import type { ChangeEvent, FormEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+  type MediaAsset,
+} from "@sleb/shared/content";
+import type { ChangeEvent, FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ContentListResponse = {
   items: ContentItem[];
@@ -26,6 +25,16 @@ type ContentDetailResponse = {
 
 type MediaListResponse = {
   assets: MediaAsset[];
+};
+
+type AuthMeResponse = {
+  user: AuthUser;
+};
+
+type AuthUser = {
+  email: string;
+  name: string;
+  role: "content_author" | "content_publisher" | "platform_admin";
 };
 
 type ContentFormState = {
@@ -43,98 +52,118 @@ type ContentFormState = {
 };
 
 const blankForm: ContentFormState = {
-  type: 'news',
-  title: '',
-  slug: '',
-  summary: '',
-  body: '',
-  status: 'draft',
-  heroImage: '',
+  type: "news",
+  title: "",
+  slug: "",
+  summary: "",
+  body: "",
+  status: "draft",
+  heroImage: "",
   metadata: {},
-  seoTitle: '',
-  seoDescription: ''
+  seoTitle: "",
+  seoDescription: "",
 };
 
 const aiKinds: Array<{ value: AiSuggestionKind; label: string }> = [
-  { value: 'expand', label: 'Expand draft' },
-  { value: 'summarize', label: 'Summarize' },
-  { value: 'seo', label: 'SEO copy' },
-  { value: 'alt_text', label: 'Image alt text' },
-  { value: 'image_prompt', label: 'Image prompt' }
+  { value: "expand", label: "Expand draft" },
+  { value: "summarize", label: "Summarize" },
+  { value: "seo", label: "SEO copy" },
+  { value: "alt_text", label: "Image alt text" },
+  { value: "image_prompt", label: "Image prompt" },
 ];
 
-const roleOptions = [
-  { value: 'content_author', label: 'Content Author' },
-  { value: 'content_publisher', label: 'Content Publisher' },
-  { value: 'platform_admin', label: 'Platform Admin' }
-] as const;
-
-type ContentRole = (typeof roleOptions)[number]['value'];
-
 export function ContentDeskClient() {
-  const [items, setItems] = useState<ContentItem[]>(seedContentItems);
-  const [counts, setCounts] = useState<Record<ContentStatus, number>>(
-    countItems(seedContentItems)
+  const [items, setItems] = useState<ContentItem[]>([]);
+  const [counts, setCounts] =
+    useState<Record<ContentStatus, number>>(emptyCounts());
+  const [selectedId, setSelectedId] = useState<string | undefined>();
+  const [form, setForm] = useState<ContentFormState>(blankForm);
+  const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<ContentStatus | "all">(
+    "all",
   );
-  const [selectedId, setSelectedId] = useState<string | undefined>(
-    seedContentItems[0]?.id
-  );
-  const [form, setForm] = useState<ContentFormState>(
-    toForm(seedContentItems[0] ?? blankForm)
-  );
-  const [typeFilter, setTypeFilter] = useState<ContentType | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<ContentStatus | 'all'>(
-    'all'
-  );
-  const [search, setSearch] = useState('');
-  const [notice, setNotice] = useState(
-    'Content seed loaded. Connecting to the publishing database.'
-  );
+  const [search, setSearch] = useState("");
+  const [notice, setNotice] = useState("Checking your admin session.");
   const [isBusy, setIsBusy] = useState(false);
-  const [aiKind, setAiKind] = useState<AiSuggestionKind>('expand');
-  const [aiInput, setAiInput] = useState('');
+  const [aiKind, setAiKind] = useState<AiSuggestionKind>("expand");
+  const [aiInput, setAiInput] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | undefined>();
-  const [activeRole, setActiveRole] =
-    useState<ContentRole>('content_publisher');
+  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<AuthUser | undefined>();
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
 
   const selectedConfig = contentTypeConfigs.find(
-    (config) => config.type === form.type
+    (config) => config.type === form.type,
   );
-  const activeActorName =
-    roleOptions.find((role) => role.value === activeRole)?.label ??
-    'Content Publisher';
-  const canPublishContent = activeRole !== 'content_author';
+  const canPublishContent = Boolean(user && user.role !== "content_author");
 
   useEffect(() => {
-    void loadItems();
-    void loadMedia();
-  }, [activeRole]);
+    void bootstrap();
+  }, []);
 
   const visibleItems = useMemo(() => {
     const term = search.trim().toLowerCase();
 
     return items
-      .filter((item) => typeFilter === 'all' || item.type === typeFilter)
-      .filter((item) => statusFilter === 'all' || item.status === statusFilter)
+      .filter((item) => typeFilter === "all" || item.type === typeFilter)
+      .filter((item) => statusFilter === "all" || item.status === statusFilter)
       .filter((item) => {
         if (!term) {
           return true;
         }
 
         return [item.title, item.summary, item.slug, item.type]
-          .join(' ')
+          .join(" ")
           .toLowerCase()
           .includes(term);
       });
   }, [items, search, statusFilter, typeFilter]);
 
+  async function bootstrap() {
+    setNotice("Checking your admin session.");
+
+    try {
+      const response = await fetch("/api/auth/me", {
+        cache: "no-store",
+        credentials: "include",
+      });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Session check failed with ${response.status}`);
+      }
+
+      const data = (await response.json()) as AuthMeResponse;
+      setUser(data.user);
+      setAuthChecked(true);
+      setNotice(`Signed in as ${data.user.name}.`);
+      await Promise.all([loadItems(), loadMedia()]);
+    } catch (error) {
+      setAuthChecked(true);
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Unable to check your admin session.",
+      );
+    }
+  }
+
   async function loadItems() {
     try {
-      const response = await fetch('/api/content/items', {
-        cache: 'no-store',
-        headers: contentHeaders()
+      const response = await fetch("/api/content/items", {
+        cache: "no-store",
+        credentials: "include",
+        headers: contentHeaders(),
       });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Content API returned ${response.status}`);
@@ -142,33 +171,40 @@ export function ContentDeskClient() {
 
       const data = (await response.json()) as ContentListResponse;
       setItems(data.items);
-      setCounts(data.counts);
+      setCounts({ ...emptyCounts(), ...data.counts });
       const nextSelected =
         data.items.find((item) => item.id === selectedId) ?? data.items[0];
 
       if (nextSelected) {
         setSelectedId(nextSelected.id);
         setForm(toForm(nextSelected));
+      } else {
+        setSelectedId(undefined);
+        setForm(blankForm);
       }
 
-      setNotice('Content Desk is connected to the publishing database.');
+      setNotice("Content Desk is connected to the publishing database.");
     } catch (error) {
       setNotice(
-        error instanceof Error
-          ? error.message
-          : 'Content API unavailable; showing seed content.'
+        error instanceof Error ? error.message : "Content API unavailable.",
       );
-      setItems(seedContentItems);
-      setCounts(countItems(seedContentItems));
+      setItems([]);
+      setCounts(emptyCounts());
     }
   }
 
   async function loadMedia() {
     try {
-      const response = await fetch('/api/content/media', {
-        cache: 'no-store',
-        headers: contentHeaders()
+      const response = await fetch("/api/content/media", {
+        cache: "no-store",
+        credentials: "include",
+        headers: contentHeaders(),
       });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Media API returned ${response.status}`);
@@ -188,17 +224,17 @@ export function ContentDeskClient() {
     setAiSuggestion(undefined);
   }
 
-  function startNew(type: ContentType = 'news') {
+  function startNew(type: ContentType = "news") {
     const config = contentTypeConfigs.find((item) => item.type === type);
     setSelectedId(undefined);
     setForm({
       ...blankForm,
       type,
       metadata: Object.fromEntries(
-        (config?.fields ?? []).map((field) => [field.key, ''])
-      )
+        (config?.fields ?? []).map((field) => [field.key, ""]),
+      ),
     });
-    setAiInput('');
+    setAiInput("");
     setAiSuggestion(undefined);
   }
 
@@ -217,19 +253,25 @@ export function ContentDeskClient() {
       metadata: form.metadata,
       seo: {
         title: form.seoTitle || undefined,
-        description: form.seoDescription || undefined
-      }
+        description: form.seoDescription || undefined,
+      },
     };
 
     try {
       const response = await fetch(
-        form.id ? `/api/content/items/${form.id}` : '/api/content/items',
+        form.id ? `/api/content/items/${form.id}` : "/api/content/items",
         {
-          method: form.id ? 'PATCH' : 'POST',
+          method: form.id ? "PATCH" : "POST",
+          credentials: "include",
           headers: contentHeaders(true),
-          body: JSON.stringify(payload)
-        }
+          body: JSON.stringify(payload),
+        },
       );
+
+      if (response.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Save failed with ${response.status}`);
@@ -241,15 +283,15 @@ export function ContentDeskClient() {
       await loadItems();
       setNotice(`Saved "${data.item.title}".`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Save failed.');
+      setNotice(error instanceof Error ? error.message : "Save failed.");
     } finally {
       setIsBusy(false);
     }
   }
 
-  async function changeWorkflow(action: 'submit' | 'publish' | 'unpublish') {
+  async function changeWorkflow(action: "submit" | "publish" | "unpublish") {
     if (!form.id) {
-      setNotice('Save the draft before changing workflow state.');
+      setNotice("Save the draft before changing workflow state.");
       return;
     }
 
@@ -257,10 +299,16 @@ export function ContentDeskClient() {
 
     try {
       const response = await fetch(`/api/content/items/${form.id}/${action}`, {
-        method: 'POST',
+        method: "POST",
+        credentials: "include",
         headers: contentHeaders(true),
-        body: '{}'
+        body: "{}",
       });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`${action} failed with ${response.status}`);
@@ -270,11 +318,11 @@ export function ContentDeskClient() {
       setForm(toForm(data.item));
       await loadItems();
       setNotice(
-        `${contentStatusLabels[data.item.status]}: "${data.item.title}".`
+        `${contentStatusLabels[data.item.status]}: "${data.item.title}".`,
       );
     } catch (error) {
       setNotice(
-        error instanceof Error ? error.message : 'Workflow action failed.'
+        error instanceof Error ? error.message : "Workflow action failed.",
       );
     } finally {
       setIsBusy(false);
@@ -285,22 +333,28 @@ export function ContentDeskClient() {
     const input = aiInput.trim() || form.body || form.summary || form.title;
 
     if (!input.trim()) {
-      setNotice('Add draft text before requesting an AI suggestion.');
+      setNotice("Add draft text before requesting an AI suggestion.");
       return;
     }
 
     setIsBusy(true);
 
     try {
-      const response = await fetch('/api/content/ai/suggestions', {
-        method: 'POST',
+      const response = await fetch("/api/content/ai/suggestions", {
+        method: "POST",
+        credentials: "include",
         headers: contentHeaders(true),
         body: JSON.stringify({
           itemId: form.id,
           kind: aiKind,
-          input
-        })
+          input,
+        }),
       });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`AI suggestion failed with ${response.status}`);
@@ -308,10 +362,10 @@ export function ContentDeskClient() {
 
       const data = (await response.json()) as { suggestion: AiSuggestion };
       setAiSuggestion(data.suggestion);
-      setNotice('AI assist draft generated for editorial review.');
+      setNotice("AI assist draft generated for editorial review.");
     } catch (error) {
       setNotice(
-        error instanceof Error ? error.message : 'AI suggestion failed.'
+        error instanceof Error ? error.message : "AI suggestion failed.",
       );
     } finally {
       setIsBusy(false);
@@ -320,14 +374,14 @@ export function ContentDeskClient() {
 
   async function uploadHeroImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    event.target.value = '';
+    event.target.value = "";
 
     if (!file) {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
-      setNotice('Choose an image file for the media library.');
+    if (!file.type.startsWith("image/")) {
+      setNotice("Choose an image file for the media library.");
       return;
     }
 
@@ -335,16 +389,22 @@ export function ContentDeskClient() {
 
     try {
       const data = await readFileAsDataUrl(file);
-      const response = await fetch('/api/content/media', {
-        method: 'POST',
+      const response = await fetch("/api/content/media", {
+        method: "POST",
+        credentials: "include",
         headers: contentHeaders(true),
         body: JSON.stringify({
           filename: file.name,
           mimeType: file.type,
           data,
-          altText: form.title || file.name
-        })
+          altText: form.title || file.name,
+        }),
       });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Media upload failed with ${response.status}`);
@@ -354,11 +414,11 @@ export function ContentDeskClient() {
       setForm((current) => ({ ...current, heroImage: payload.asset.url }));
       setMediaAssets((current) => [payload.asset, ...current]);
       setNotice(
-        `Uploaded "${payload.asset.filename}" and set it as hero image.`
+        `Uploaded "${payload.asset.filename}" and set it as hero image.`,
       );
     } catch (error) {
       setNotice(
-        error instanceof Error ? error.message : 'Media upload failed.'
+        error instanceof Error ? error.message : "Media upload failed.",
       );
     } finally {
       setIsBusy(false);
@@ -371,16 +431,26 @@ export function ContentDeskClient() {
   }
 
   function contentHeaders(withJson = false) {
-    const headers: Record<string, string> = {
-      'x-sleb-role': activeRole,
-      'x-sleb-actor-name': activeActorName
-    };
+    const headers: Record<string, string> = {};
 
     if (withJson) {
-      headers['content-type'] = 'application/json';
+      headers["content-type"] = "application/json";
     }
 
     return headers;
+  }
+
+  async function logout() {
+    setIsBusy(true);
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      window.location.href = "/account/login";
+    }
   }
 
   return (
@@ -395,23 +465,24 @@ export function ContentDeskClient() {
           </p>
         </div>
         <div className="contentDeskControls">
-          <label>
-            Role
-            <select
-              aria-label="Active content role"
-              onChange={(event) =>
-                setActiveRole(event.target.value as ContentRole)
-              }
-              value={activeRole}
-            >
-              {roleOptions.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button onClick={() => startNew('news')} type="button">
+          {user ? (
+            <div className="contentSession">
+              <span>{user.name}</span>
+              <small>{formatRole(user.role)}</small>
+            </div>
+          ) : null}
+          <button
+            disabled={!authChecked || isBusy}
+            onClick={logout}
+            type="button"
+          >
+            Sign out
+          </button>
+          <button
+            disabled={!authChecked || !user}
+            onClick={() => startNew("news")}
+            type="button"
+          >
             New Content
           </button>
         </div>
@@ -424,7 +495,7 @@ export function ContentDeskClient() {
             key={status}
             onClick={() =>
               setStatusFilter(
-                statusFilter === status ? 'all' : (status as ContentStatus)
+                statusFilter === status ? "all" : (status as ContentStatus),
               )
             }
             type="button"
@@ -447,7 +518,7 @@ export function ContentDeskClient() {
             <select
               aria-label="Filter content type"
               onChange={(event) =>
-                setTypeFilter(event.target.value as ContentType | 'all')
+                setTypeFilter(event.target.value as ContentType | "all")
               }
               value={typeFilter}
             >
@@ -485,7 +556,7 @@ export function ContentDeskClient() {
                 <small>
                   {
                     contentTypeConfigs.find(
-                      (config) => config.type === item.type
+                      (config) => config.type === item.type,
                     )?.label
                   }
                 </small>
@@ -499,31 +570,31 @@ export function ContentDeskClient() {
           <div className="contentEditorHeader">
             <div>
               <span>
-                {form.id ? contentStatusLabels[form.status] : 'New draft'}
+                {form.id ? contentStatusLabels[form.status] : "New draft"}
               </span>
-              <h3>{form.title || 'Untitled content'}</h3>
+              <h3>{form.title || "Untitled content"}</h3>
             </div>
             <div className="contentActions">
-              <button disabled={isBusy} type="submit">
+              <button disabled={isBusy || !user} type="submit">
                 Save
               </button>
               <button
-                disabled={isBusy || !form.id}
-                onClick={() => changeWorkflow('submit')}
+                disabled={isBusy || !form.id || !user}
+                onClick={() => changeWorkflow("submit")}
                 type="button"
               >
                 Submit
               </button>
               <button
                 disabled={isBusy || !form.id || !canPublishContent}
-                onClick={() => changeWorkflow('publish')}
+                onClick={() => changeWorkflow("publish")}
                 type="button"
               >
                 Publish
               </button>
               <button
                 disabled={isBusy || !form.id || !canPublishContent}
-                onClick={() => changeWorkflow('unpublish')}
+                onClick={() => changeWorkflow("unpublish")}
                 type="button"
               >
                 Unpublish
@@ -538,17 +609,17 @@ export function ContentDeskClient() {
                 onChange={(event) => {
                   const nextType = event.target.value as ContentType;
                   const config = contentTypeConfigs.find(
-                    (item) => item.type === nextType
+                    (item) => item.type === nextType,
                   );
                   setForm((current) => ({
                     ...current,
                     type: nextType,
                     metadata: {
                       ...Object.fromEntries(
-                        (config?.fields ?? []).map((field) => [field.key, ''])
+                        (config?.fields ?? []).map((field) => [field.key, ""]),
                       ),
-                      ...current.metadata
-                    }
+                      ...current.metadata,
+                    },
                   }));
                 }}
                 value={form.type}
@@ -566,7 +637,7 @@ export function ContentDeskClient() {
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    slug: event.target.value
+                    slug: event.target.value,
                   }))
                 }
                 value={form.slug}
@@ -580,7 +651,7 @@ export function ContentDeskClient() {
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
-                  title: event.target.value
+                  title: event.target.value,
                 }))
               }
               required
@@ -594,7 +665,7 @@ export function ContentDeskClient() {
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
-                  summary: event.target.value
+                  summary: event.target.value,
                 }))
               }
               rows={3}
@@ -620,7 +691,7 @@ export function ContentDeskClient() {
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    heroImage: event.target.value
+                    heroImage: event.target.value,
                   }))
                 }
                 value={form.heroImage}
@@ -632,7 +703,7 @@ export function ContentDeskClient() {
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    seoTitle: event.target.value
+                    seoTitle: event.target.value,
                   }))
                 }
                 value={form.seoTitle}
@@ -646,7 +717,7 @@ export function ContentDeskClient() {
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
-                  seoDescription: event.target.value
+                  seoDescription: event.target.value,
                 }))
               }
               rows={2}
@@ -667,13 +738,13 @@ export function ContentDeskClient() {
                           ...current,
                           metadata: {
                             ...current.metadata,
-                            [field.key]: event.target.value
-                          }
+                            [field.key]: event.target.value,
+                          },
                         }))
                       }
                       required={field.required}
-                      type={field.kind === 'date' ? 'date' : 'text'}
-                      value={form.metadata[field.key] ?? ''}
+                      type={field.kind === "date" ? "date" : "text"}
+                      value={form.metadata[field.key] ?? ""}
                     />
                   </label>
                 ))}
@@ -689,7 +760,7 @@ export function ContentDeskClient() {
               Upload hero image
               <input
                 accept="image/*"
-                disabled={isBusy}
+                disabled={isBusy || !user}
                 onChange={uploadHeroImage}
                 type="file"
               />
@@ -749,7 +820,7 @@ export function ContentDeskClient() {
               value={aiInput}
             />
             <button
-              disabled={isBusy}
+              disabled={isBusy || !user}
               onClick={requestAiSuggestion}
               type="button"
             >
@@ -766,9 +837,9 @@ export function ContentDeskClient() {
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.addEventListener('load', () => resolve(String(reader.result)));
-    reader.addEventListener('error', () =>
-      reject(reader.error ?? new Error('File read failed'))
+    reader.addEventListener("load", () => resolve(String(reader.result)));
+    reader.addEventListener("error", () =>
+      reject(reader.error ?? new Error("File read failed")),
     );
     reader.readAsDataURL(file);
   });
@@ -786,38 +857,56 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatRole(role: AuthUser["role"]) {
+  const labels: Record<AuthUser["role"], string> = {
+    content_author: "Content Author",
+    content_publisher: "Content Publisher",
+    platform_admin: "Platform Admin",
+  };
+
+  return labels[role];
+}
+
+function redirectToLogin() {
+  const returnTo = `${window.location.pathname}${window.location.search}`;
+  window.location.href = `/account/login?returnTo=${encodeURIComponent(
+    returnTo,
+  )}`;
+}
+
 function toForm(item: ContentItem | ContentFormState): ContentFormState {
-  if ('metadata' in item && 'seo' in item) {
+  if ("metadata" in item && "seo" in item) {
     return {
-      id: 'id' in item ? item.id : undefined,
+      id: "id" in item ? item.id : undefined,
       type: item.type,
       title: item.title,
       slug: item.slug,
       summary: item.summary,
       body: item.body,
       status: item.status,
-      heroImage: item.heroImage ?? '',
+      heroImage: item.heroImage ?? "",
       metadata: item.metadata ?? {},
-      seoTitle: item.seo.title ?? '',
-      seoDescription: item.seo.description ?? ''
+      seoTitle: item.seo.title ?? "",
+      seoDescription: item.seo.description ?? "",
     };
   }
 
   return item;
 }
 
+function emptyCounts(): Record<ContentStatus, number> {
+  return {
+    draft: 0,
+    in_review: 0,
+    published: 0,
+    scheduled: 0,
+    archived: 0,
+  };
+}
+
 function countItems(records: ContentItem[]) {
-  return records.reduce(
-    (counts, item) => {
-      counts[item.status] += 1;
-      return counts;
-    },
-    {
-      draft: 0,
-      in_review: 0,
-      published: 0,
-      scheduled: 0,
-      archived: 0
-    } satisfies Record<ContentStatus, number>
-  );
+  return records.reduce((counts, item) => {
+    counts[item.status] += 1;
+    return counts;
+  }, emptyCounts());
 }

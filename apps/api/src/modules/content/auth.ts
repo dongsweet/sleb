@@ -1,9 +1,11 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from "fastify";
+import { loadEnv } from "../../config/env.js";
+import { readAuthSession } from "../auth/session.js";
 
 export const contentRoles = [
-  'content_author',
-  'content_publisher',
-  'platform_admin'
+  "content_author",
+  "content_publisher",
+  "platform_admin",
 ] as const;
 
 export type ContentRole = (typeof contentRoles)[number];
@@ -14,21 +16,35 @@ export type ContentActor = {
 };
 
 const roleLabels: Record<ContentRole, string> = {
-  content_author: 'Content Author',
-  content_publisher: 'Content Publisher',
-  platform_admin: 'Platform Admin'
+  content_author: "Content Author",
+  content_publisher: "Content Publisher",
+  platform_admin: "Platform Admin",
 };
 
 const roleRank: Record<ContentRole, number> = {
   content_author: 1,
   content_publisher: 2,
-  platform_admin: 3
+  platform_admin: 3,
 };
 
 export function getContentActor(
-  request: FastifyRequest
+  request: FastifyRequest,
 ): ContentActor | undefined {
-  const role = normalizeHeader(request.headers['x-sleb-role']);
+  const env = loadEnv();
+  const session = readAuthSession(request, env.AUTH_SESSION_SECRET);
+
+  if (session) {
+    return {
+      role: session.role,
+      name: session.name,
+    };
+  }
+
+  if (env.NODE_ENV === "production") {
+    return undefined;
+  }
+
+  const role = normalizeHeader(request.headers["x-sleb-role"]);
 
   if (!isContentRole(role)) {
     return undefined;
@@ -37,27 +53,27 @@ export function getContentActor(
   return {
     role,
     name:
-      normalizeHeader(request.headers['x-sleb-actor-name']) || roleLabels[role]
+      normalizeHeader(request.headers["x-sleb-actor-name"]) || roleLabels[role],
   };
 }
 
 export function requireContentRole(
   request: FastifyRequest,
   reply: FastifyReply,
-  minimumRole: ContentRole = 'content_author'
+  minimumRole: ContentRole = "content_author",
 ) {
   const actor = getContentActor(request);
 
   if (!actor) {
     reply.code(401).send({
-      error: 'Content role is required'
+      error: "Content role is required",
     });
     return undefined;
   }
 
   if (roleRank[actor.role] < roleRank[minimumRole]) {
     reply.code(403).send({
-      error: `${roleLabels[minimumRole]} permission is required`
+      error: `${roleLabels[minimumRole]} permission is required`,
     });
     return undefined;
   }
@@ -66,15 +82,15 @@ export function requireContentRole(
 }
 
 export function canWriteContentType(actor: ContentActor, type: string) {
-  return type !== 'policy' || actor.role === 'platform_admin';
+  return type !== "policy" || actor.role === "platform_admin";
 }
 
 export function canPublish(actor: ContentActor) {
-  return actor.role === 'content_publisher' || actor.role === 'platform_admin';
+  return actor.role === "content_publisher" || actor.role === "platform_admin";
 }
 
 export function canSetStatus(actor: ContentActor, status: string | undefined) {
-  if (!status || status === 'draft' || status === 'in_review') {
+  if (!status || status === "draft" || status === "in_review") {
     return true;
   }
 
