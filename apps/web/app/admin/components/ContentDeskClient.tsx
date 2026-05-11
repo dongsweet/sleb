@@ -66,7 +66,7 @@ export function ContentDeskClient() {
   const [typeFilter, setTypeFilter] = useState<ContentType | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ContentStatus | 'all'>('all');
   const [search, setSearch] = useState('');
-  const [notice, setNotice] = useState('Content seed loaded. API changes are held in the running service until database persistence is wired.');
+  const [notice, setNotice] = useState('Content seed loaded. Connecting to the publishing database.');
   const [isBusy, setIsBusy] = useState(false);
   const [aiKind, setAiKind] = useState<AiSuggestionKind>('expand');
   const [aiInput, setAiInput] = useState('');
@@ -114,7 +114,7 @@ export function ContentDeskClient() {
         setForm(toForm(nextSelected));
       }
 
-      setNotice('Content Desk is connected to the API service.');
+      setNotice('Content Desk is connected to the publishing database.');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Content API unavailable; showing seed content.');
       setItems(seedContentItems);

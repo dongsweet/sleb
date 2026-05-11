@@ -78,6 +78,7 @@ services:
       NODE_ENV: production
       PUBLIC_WEB_URL: http://localhost:3000
       PUBLIC_API_URL: http://localhost:4000
+      INTERNAL_API_URL: http://api:4000
     ports:
       - "3000:3000"
     depends_on:
@@ -87,4 +88,3 @@ volumes:
   postgres-data:
   valkey-data:
   minio-data:
-

@@ -93,6 +93,7 @@ services:
       NODE_ENV: production
       PUBLIC_WEB_URL: https://sleb.sweethome.vip
       PUBLIC_API_URL: https://sleb.sweethome.vip/api
+      INTERNAL_API_URL: http://api:4000
     depends_on:
       - api
     networks:

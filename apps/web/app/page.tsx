@@ -1,15 +1,29 @@
-import { seedContentItems, seedTechnologyListings, type ContentType } from '@sleb/shared/content';
+import {
+  seedTechnologyListings,
+  type ContentItem,
+  type ContentType
+} from '@sleb/shared/content';
 import { SiteChrome } from './components/SiteChrome';
+import { getContentHref, getPublishedContentItems } from './data/content';
+
+export const dynamic = 'force-dynamic';
 
 const services = [
   {
     key: 'buildings',
     title: 'Buildings',
-    summary: 'Green Mark projects directory and statistical building energy performance dashboard.',
+    summary:
+      'Green Mark projects directory and statistical building energy performance dashboard.',
     icon: '/sleb-assets/service-building.png',
     links: [
-      { label: 'Green Mark projects directory', href: '/buildings/green-mark-directory' },
-      { label: 'Statistical building energy performance dashboard', href: '/buildings/energy-benchmarking' }
+      {
+        label: 'Green Mark projects directory',
+        href: '/buildings/green-mark-directory'
+      },
+      {
+        label: 'Statistical building energy performance dashboard',
+        href: '/buildings/energy-benchmarking'
+      }
     ]
   },
   {
@@ -18,56 +32,54 @@ const services = [
     summary: 'Technologies and products directory.',
     icon: '/sleb-assets/service-technologies.png',
     links: [
-      { label: 'Find latest green technologies and products', href: '/technologies' },
+      {
+        label: 'Find latest green technologies and products',
+        href: '/technologies'
+      },
       { label: 'Register my technology', href: '/technologies?type=my' }
     ]
   },
   {
     key: 'finance',
     title: 'Green Finance',
-    summary: 'Predict the energy efficient level of your home or building before move-in.',
+    summary:
+      'Predict the energy efficient level of your home or building before move-in.',
     icon: '/sleb-assets/service-projects.png',
     links: [
       { label: 'Tropical Home Energy Efficiency Assessment', href: '/theea' },
-      { label: 'Tropical Building Energy Efficiency Assessment', href: '/beea' }
+      {
+        label: 'Tropical Building Energy Efficiency Assessment',
+        href: '/beea'
+      }
     ]
   },
   {
     key: 'calculator',
     title: 'AI Calculator',
-    summary: 'Assess or verify your project\'s energy efficiency level under Green Mark frameworks.',
+    summary:
+      "Assess or verify your project's energy efficiency level under Green Mark frameworks.",
     icon: '/sleb-assets/icon-verify.svg',
     href: '/ai-calculator'
   }
 ];
 
-const updatePanels = [
-  buildContentPanel('Events', 'event', '/events', false),
-  buildContentPanel('News', 'news', '/news', true),
-  buildContentPanel('Grants', 'grant', '/grants-and-incentives', false),
-  {
-    title: 'Latest Technologies',
-    href: '/technologies',
-    wide: true,
-    items: seedTechnologyListings.map((item) => ({
-      label: item.title,
-      href: item.href
-    }))
-  }
-];
-
-function buildContentPanel(title: string, type: ContentType, href: string, wide: boolean) {
+function buildContentPanel(
+  title: string,
+  type: ContentType,
+  href: string,
+  wide: boolean,
+  contentItems: ContentItem[]
+) {
   return {
     title,
     href,
     wide,
-    items: seedContentItems
-      .filter((item) => item.type === type && item.status === 'published')
-      .sort((a, b) => (b.publishedAt ?? b.updatedAt).localeCompare(a.publishedAt ?? a.updatedAt))
+    items: contentItems
+      .filter((item) => item.type === type)
       .slice(0, 3)
       .map((item) => ({
         label: item.title,
-        href: `${href}/${item.slug}`
+        href: getContentHref(item)
       }))
   };
 }
@@ -85,17 +97,41 @@ const aboutGoals = [
   },
   {
     title: 'Mission',
-    body:
-      'Capture the value of energy performance data of buildings and technologies, and support decision-making in adopting energy-efficient technologies.'
+    body: 'Capture the value of energy performance data of buildings and technologies, and support decision-making in adopting energy-efficient technologies.'
   },
   {
     title: 'Objective',
-    body:
-      'Support Singapore Green Building Masterplan (SGBMP) targets and BCA Green Mark certification scheme for a more sustainable Singapore.'
+    body: 'Support Singapore Green Building Masterplan (SGBMP) targets and BCA Green Mark certification scheme for a more sustainable Singapore.'
   }
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const contentItems = await getPublishedContentItems([
+    'event',
+    'news',
+    'grant'
+  ]);
+  const updatePanels = [
+    buildContentPanel('Events', 'event', '/events', false, contentItems),
+    buildContentPanel('News', 'news', '/news', true, contentItems),
+    buildContentPanel(
+      'Grants',
+      'grant',
+      '/grants-and-incentives',
+      false,
+      contentItems
+    ),
+    {
+      title: 'Latest Technologies',
+      href: '/technologies',
+      wide: true,
+      items: seedTechnologyListings.map((item) => ({
+        label: item.title,
+        href: item.href
+      }))
+    }
+  ];
+
   return (
     <SiteChrome activeArea="Home">
       <main className="slebHome">
@@ -104,12 +140,17 @@ export default function HomePage() {
             <div className="slebHeroContent">
               <h1>Empowering the present for a sustainable future</h1>
               <p>
-                SLEB Smart Hub offers smart services and resources to transform your buildings.
-                We leverage cutting-edge data, knowledge, and artificial intelligence to help your
-                buildings achieve Super Low Energy target.
+                SLEB Smart Hub offers smart services and resources to transform
+                your buildings. We leverage cutting-edge data, knowledge, and
+                artificial intelligence to help your buildings achieve Super Low
+                Energy target.
               </p>
               <form action="/search" className="slebSearch" method="get">
-                <input aria-label="Search resources, database and news" name="q" placeholder="Search Resources, Database & News" />
+                <input
+                  aria-label="Search resources, database and news"
+                  name="q"
+                  placeholder="Search Resources, Database & News"
+                />
                 <button aria-label="Search" type="submit" />
               </form>
             </div>
@@ -123,9 +164,15 @@ export default function HomePage() {
             </h2>
             <div className="slebServiceGrid">
               {services.map((service) => (
-                <article className={`slebServiceCard ${service.key}`} key={service.title}>
+                <article
+                  className={`slebServiceCard ${service.key}`}
+                  key={service.title}
+                >
                   {service.href ? (
-                    <a className="slebServiceFace slebServiceLink" href={service.href}>
+                    <a
+                      className="slebServiceFace slebServiceLink"
+                      href={service.href}
+                    >
                       <img alt="" src={service.icon} />
                       <h3>{service.title}</h3>
                       <p>{service.summary}</p>
@@ -157,7 +204,12 @@ export default function HomePage() {
             </h2>
             <div className="slebUpdateGrid">
               {updatePanels.map((panel) => (
-                <article className={panel.wide ? 'slebUpdatePanel wide' : 'slebUpdatePanel'} key={panel.title}>
+                <article
+                  className={
+                    panel.wide ? 'slebUpdatePanel wide' : 'slebUpdatePanel'
+                  }
+                  key={panel.title}
+                >
                   <div className="slebPanelTitle">
                     <h3>{panel.title}</h3>
                     <a href={panel.href}>All</a>
