@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { extname } from 'node:path';
+import type { Readable } from 'node:stream';
 import type { FastifyBaseLogger } from 'fastify';
+import { Client as MinioClient } from 'minio';
 import pg from 'pg';
 import {
   seedContentItems,
@@ -10,7 +13,8 @@ import {
   type ContentType,
   type ContentUpsertInput,
   type ContentVersion,
-  type ContentWorkflowEvent
+  type ContentWorkflowEvent,
+  type MediaAsset
 } from '@sleb/shared/content';
 
 const { Pool } = pg;
@@ -27,29 +31,53 @@ type ContentDetail = {
   workflow: ContentWorkflowEvent[];
 };
 
+type MediaUploadInput = {
+  filename: string;
+  mimeType: string;
+  data: string;
+  altText?: string;
+  caption?: string;
+  actorName: string;
+};
+
+type MediaFile = {
+  asset: MediaAsset;
+  stream: Readable;
+};
+
 type ContentRepository = {
   listItems(query: ContentListQuery): Promise<{
     items: ContentItem[];
     counts: Record<ContentStatus, number>;
   }>;
   getItem(id: string): Promise<ContentDetail | undefined>;
-  createItem(input: ContentUpsertInput): Promise<ContentDetail>;
+  createItem(
+    input: ContentUpsertInput,
+    actorName: string
+  ): Promise<ContentDetail>;
   updateItem(
     id: string,
-    input: Partial<ContentUpsertInput>
+    input: Partial<ContentUpsertInput>,
+    actorName: string
   ): Promise<ContentDetail | undefined>;
   changeStatus(
     id: string,
     status: ContentStatus,
     action: ContentWorkflowEvent['action'],
-    note: string
+    note: string,
+    actorName: string
   ): Promise<ContentDetail | undefined>;
   createSuggestion(input: {
     itemId?: string;
     kind: AiSuggestionKind;
     input: string;
     output: string;
+    actorName: string;
   }): Promise<AiSuggestion>;
+  listMediaAssets(): Promise<MediaAsset[]>;
+  createMediaAsset(input: MediaUploadInput): Promise<MediaAsset>;
+  getMediaFile(id: string): Promise<MediaFile | undefined>;
+  deleteMediaAsset(id: string): Promise<boolean>;
   close(): Promise<void>;
 };
 
@@ -102,6 +130,19 @@ type DbSuggestionRow = {
   created_at: Date | string;
 };
 
+type DbMediaAssetRow = {
+  id: string;
+  object_key: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  alt_text: string | null;
+  caption: string | null;
+  metadata: Record<string, string> | null;
+  created_by_name: string | null;
+  created_at: Date | string;
+};
+
 const contentStatuses: ContentStatus[] = [
   'draft',
   'in_review',
@@ -113,20 +154,40 @@ const contentStatuses: ContentStatus[] = [
 export async function createContentRepository(options: {
   databaseUrl: string;
   logger: FastifyBaseLogger;
+  media: {
+    endPoint: string;
+    port: number;
+    accessKey: string;
+    secretKey: string;
+    bucket: string;
+    useSSL: boolean;
+  };
 }): Promise<ContentRepository> {
   const pool = new Pool({
     connectionString: options.databaseUrl,
     max: 10
   });
+  const minio = new MinioClient({
+    endPoint: options.media.endPoint,
+    port: options.media.port,
+    useSSL: options.media.useSSL,
+    accessKey: options.media.accessKey,
+    secretKey: options.media.secretKey
+  });
 
   await ensureContentSchema(pool);
+  await ensureMediaBucket(minio, options.media.bucket, options.logger);
   await seedContent(pool, options.logger);
 
-  return new PgContentRepository(pool);
+  return new PgContentRepository(pool, minio, options.media.bucket);
 }
 
 class PgContentRepository implements ContentRepository {
-  constructor(private readonly pool: pg.Pool) {}
+  constructor(
+    private readonly pool: pg.Pool,
+    private readonly minio: MinioClient,
+    private readonly mediaBucket: string
+  ) {}
 
   async listItems(query: ContentListQuery) {
     const values: unknown[] = [];
@@ -181,7 +242,7 @@ class PgContentRepository implements ContentRepository {
     };
   }
 
-  async createItem(input: ContentUpsertInput) {
+  async createItem(input: ContentUpsertInput, actorName: string) {
     const now = new Date();
     const status = input.status ?? 'draft';
     const item: ContentItem = {
@@ -195,8 +256,8 @@ class PgContentRepository implements ContentRepository {
       heroImage: input.heroImage,
       metadata: input.metadata ?? {},
       seo: input.seo ?? {},
-      authorName: 'Content Author',
-      reviewerName: status === 'published' ? 'Content Publisher' : undefined,
+      authorName: actorName,
+      reviewerName: status === 'published' ? actorName : undefined,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
       submittedAt: status === 'in_review' ? now.toISOString() : undefined,
@@ -209,12 +270,13 @@ class PgContentRepository implements ContentRepository {
     try {
       await client.query('begin');
       await insertContentItem(client, item);
-      await appendVersion(client, item, 'Created');
+      await appendVersion(client, item, actorName);
       await appendWorkflowEvent(
         client,
         item.id,
         'created',
-        'Created from Content Desk'
+        'Created from Content Desk',
+        actorName
       );
       await client.query('commit');
     } catch (error) {
@@ -227,7 +289,11 @@ class PgContentRepository implements ContentRepository {
     return this.requireDetail(item.id);
   }
 
-  async updateItem(id: string, input: Partial<ContentUpsertInput>) {
+  async updateItem(
+    id: string,
+    input: Partial<ContentUpsertInput>,
+    actorName: string
+  ) {
     const existing = await this.getContentItem(id);
 
     if (!existing) {
@@ -256,6 +322,7 @@ class PgContentRepository implements ContentRepository {
         status === 'published'
           ? (existing.publishedAt ?? now)
           : existing.publishedAt,
+      reviewerName: status === 'published' ? actorName : existing.reviewerName,
       scheduledFor: input.scheduledFor ?? existing.scheduledFor
     };
 
@@ -264,12 +331,13 @@ class PgContentRepository implements ContentRepository {
     try {
       await client.query('begin');
       await updateContentItem(client, item);
-      await appendVersion(client, item, 'Updated');
+      await appendVersion(client, item, actorName);
       await appendWorkflowEvent(
         client,
         item.id,
         'updated',
-        'Edited from Content Desk'
+        'Edited from Content Desk',
+        actorName
       );
       await client.query('commit');
     } catch (error) {
@@ -286,7 +354,8 @@ class PgContentRepository implements ContentRepository {
     id: string,
     status: ContentStatus,
     action: ContentWorkflowEvent['action'],
-    note: string
+    note: string,
+    actorName: string
   ) {
     const existing = await this.getContentItem(id);
 
@@ -298,8 +367,7 @@ class PgContentRepository implements ContentRepository {
     const item: ContentItem = {
       ...existing,
       status,
-      reviewerName:
-        status === 'published' ? 'Content Publisher' : existing.reviewerName,
+      reviewerName: status === 'published' ? actorName : existing.reviewerName,
       updatedAt: now,
       submittedAt: status === 'in_review' ? now : existing.submittedAt,
       publishedAt: status === 'published' ? now : existing.publishedAt
@@ -310,8 +378,8 @@ class PgContentRepository implements ContentRepository {
     try {
       await client.query('begin');
       await updateContentItem(client, item);
-      await appendVersion(client, item, note);
-      await appendWorkflowEvent(client, id, action, note);
+      await appendVersion(client, item, actorName);
+      await appendWorkflowEvent(client, id, action, note, actorName);
       await client.query('commit');
     } catch (error) {
       await client.query('rollback');
@@ -328,6 +396,7 @@ class PgContentRepository implements ContentRepository {
     kind: AiSuggestionKind;
     input: string;
     output: string;
+    actorName: string;
   }) {
     const result = await this.pool.query<DbSuggestionRow>(
       `
@@ -341,7 +410,7 @@ class PgContentRepository implements ContentRepository {
           created_by_name,
           created_at
         )
-        values ($1, $2, $3, $4, $5, 'draft', 'AI Assist', now())
+        values ($1, $2, $3, $4, $5, 'draft', $6, now())
         returning *
       `,
       [
@@ -349,11 +418,117 @@ class PgContentRepository implements ContentRepository {
         input.itemId ?? null,
         input.kind,
         input.input,
-        input.output
+        input.output,
+        input.actorName
       ]
     );
 
     return toAiSuggestion(result.rows[0]);
+  }
+
+  async listMediaAssets() {
+    const result = await this.pool.query<DbMediaAssetRow>(
+      `
+        select *
+        from media_assets
+        order by created_at desc
+      `
+    );
+    return result.rows.map(toMediaAsset);
+  }
+
+  async createMediaAsset(input: MediaUploadInput) {
+    const buffer = decodeMediaData(input.data, input.mimeType);
+    const id = randomUUID();
+    const objectKey = `content/${new Date().getUTCFullYear()}/${id}${getSafeExtension(
+      input.filename,
+      input.mimeType
+    )}`;
+
+    await this.minio.putObject(
+      this.mediaBucket,
+      objectKey,
+      buffer,
+      buffer.length,
+      {
+        'Content-Type': input.mimeType
+      }
+    );
+
+    const result = await this.pool.query<DbMediaAssetRow>(
+      `
+        insert into media_assets (
+          id,
+          object_key,
+          filename,
+          mime_type,
+          size_bytes,
+          alt_text,
+          caption,
+          metadata,
+          created_by_name,
+          created_at
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, '{}'::jsonb, $8, now())
+        returning *
+      `,
+      [
+        id,
+        objectKey,
+        input.filename,
+        input.mimeType,
+        buffer.length,
+        input.altText ?? null,
+        input.caption ?? null,
+        input.actorName
+      ]
+    );
+
+    return toMediaAsset(result.rows[0]);
+  }
+
+  async getMediaFile(id: string) {
+    const result = await this.pool.query<DbMediaAssetRow>(
+      'select * from media_assets where id = $1',
+      [id]
+    );
+    const row = result.rows[0];
+
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      asset: toMediaAsset(row),
+      stream: await this.minio.getObject(this.mediaBucket, row.object_key)
+    };
+  }
+
+  async deleteMediaAsset(id: string) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('begin');
+      const result = await client.query<DbMediaAssetRow>(
+        'delete from media_assets where id = $1 returning *',
+        [id]
+      );
+      const row = result.rows[0];
+
+      if (!row) {
+        await client.query('rollback');
+        return false;
+      }
+
+      await this.minio.removeObject(this.mediaBucket, row.object_key);
+      await client.query('commit');
+      return true;
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async close() {
@@ -476,6 +651,23 @@ async function ensureContentSchema(pool: pg.Pool) {
     create index if not exists content_items_type_status_idx on content_items (type, status);
     create index if not exists content_items_published_at_idx on content_items (published_at);
 
+    create table if not exists media_assets (
+      id text primary key,
+      object_key text not null,
+      filename varchar(320) not null,
+      mime_type varchar(160) not null,
+      size_bytes integer not null default 0,
+      alt_text text,
+      caption text,
+      metadata jsonb not null default '{}',
+      created_by_name varchar(240) not null default 'Content Author',
+      created_at timestamptz not null default now()
+    );
+
+    alter table media_assets add column if not exists created_by_name varchar(240) not null default 'Content Author';
+    create unique index if not exists media_assets_object_key_idx on media_assets (object_key);
+    create index if not exists media_assets_mime_type_idx on media_assets (mime_type);
+
     create table if not exists content_versions (
       id text primary key,
       item_id text not null references content_items(id) on delete cascade,
@@ -537,7 +729,10 @@ async function seedContent(pool: pg.Pool, logger: FastifyBaseLogger) {
         client,
         item.id,
         item.status === 'published' ? 'published' : 'created',
-        'Seed import'
+        'Seed import',
+        item.status === 'published'
+          ? (item.reviewerName ?? 'Content Publisher')
+          : item.authorName
       );
     }
 
@@ -646,7 +841,7 @@ async function updateContentItem(client: pg.PoolClient, item: ContentItem) {
 async function appendVersion(
   client: pg.PoolClient,
   item: ContentItem,
-  note: string
+  actorName: string
 ) {
   const result = await client.query<{ version_number: number }>(
     `
@@ -670,7 +865,7 @@ async function appendVersion(
       )
       values ($1, $2, $3, $4::jsonb, $5, now())
     `,
-    [randomUUID(), item.id, versionNumber, JSON.stringify(item), note]
+    [randomUUID(), item.id, versionNumber, JSON.stringify(item), actorName]
   );
 }
 
@@ -678,7 +873,8 @@ async function appendWorkflowEvent(
   client: pg.PoolClient,
   itemId: string,
   action: ContentWorkflowEvent['action'],
-  note: string
+  note: string,
+  actorName: string
 ) {
   await client.query(
     `
@@ -692,13 +888,7 @@ async function appendWorkflowEvent(
       )
       values ($1, $2, $3, $4, $5, now())
     `,
-    [
-      randomUUID(),
-      itemId,
-      action,
-      action === 'published' ? 'Content Publisher' : 'Content Author',
-      note
-    ]
+    [randomUUID(), itemId, action, actorName, note]
   );
 }
 
@@ -757,6 +947,82 @@ function toAiSuggestion(row: DbSuggestionRow): AiSuggestion {
     createdByName: row.created_by_name ?? 'AI Assist',
     createdAt: toIsoString(row.created_at)
   };
+}
+
+function toMediaAsset(row: DbMediaAssetRow): MediaAsset {
+  return {
+    id: row.id,
+    filename: row.filename,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    url: `/api/content/media/${row.id}/file`,
+    altText: row.alt_text ?? undefined,
+    caption: row.caption ?? undefined,
+    createdByName: row.created_by_name ?? 'Content Author',
+    createdAt: toIsoString(row.created_at)
+  };
+}
+
+async function ensureMediaBucket(
+  minio: MinioClient,
+  bucket: string,
+  logger: FastifyBaseLogger
+) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 10; attempt += 1) {
+    try {
+      const exists = await minio.bucketExists(bucket);
+
+      if (!exists) {
+        await minio.makeBucket(bucket);
+        logger.info({ bucket }, 'Created media bucket');
+      }
+
+      return;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 300));
+    }
+  }
+
+  throw lastError;
+}
+
+function decodeMediaData(data: string, mimeType: string) {
+  const dataUrlPrefix = `data:${mimeType};base64,`;
+  const base64 = data.startsWith(dataUrlPrefix)
+    ? data.slice(dataUrlPrefix.length)
+    : data;
+  const buffer = Buffer.from(base64, 'base64');
+
+  if (buffer.byteLength === 0) {
+    throw new Error('Uploaded media is empty');
+  }
+
+  if (buffer.byteLength > 5 * 1024 * 1024) {
+    throw new Error('Uploaded media exceeds 5 MB');
+  }
+
+  return buffer;
+}
+
+function getSafeExtension(filename: string, mimeType: string) {
+  const fromName = extname(filename).toLowerCase();
+
+  if (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(fromName)) {
+    return fromName;
+  }
+
+  const byMime: Record<string, string> = {
+    'image/gif': '.gif',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/svg+xml': '.svg',
+    'image/webp': '.webp'
+  };
+
+  return byMime[mimeType] ?? '';
 }
 
 function toIsoString(value: Date | string) {

@@ -1661,7 +1661,35 @@ small {
   cursor: pointer;
 }
 
-.contentDeskTop > button,
+.contentDeskControls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: min(100%, 360px);
+}
+
+.contentDeskControls label {
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.contentDeskControls select {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--foreground);
+  text-transform: none;
+}
+
+.contentDeskControls > button,
 .contentActions button,
 .contentAssistPanel button {
   min-height: 40px;
@@ -1954,6 +1982,59 @@ small {
   color: var(--green);
 }
 
+.mediaUpload {
+  padding: 12px;
+  border: 1px dashed #a8b8b1;
+  border-radius: 8px;
+  background: #f8faf9;
+}
+
+.mediaUpload input {
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.contentHeroPreview {
+  display: block;
+  width: 100%;
+  max-height: 170px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f8faf9;
+}
+
+.mediaAssetList {
+  display: grid;
+  gap: 8px;
+}
+
+.mediaAssetList button {
+  display: grid;
+  gap: 3px;
+  min-height: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: #fbfcfb;
+  color: var(--foreground);
+  text-align: left;
+}
+
+.mediaAssetList button:hover {
+  border-color: var(--green);
+}
+
+.mediaAssetList span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mediaAssetList small {
+  color: var(--muted);
+}
+
 .contentAssistPanel pre {
   max-height: 260px;
   overflow: auto;
@@ -2131,6 +2212,15 @@ small {
   .contentDeskTop,
   .contentEditorHeader {
     display: grid;
+  }
+
+  .contentDeskControls {
+    justify-content: stretch;
+  }
+
+  .contentDeskControls label,
+  .contentDeskControls > button {
+    width: 100%;
   }
 
   .contentMetrics,

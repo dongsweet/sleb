@@ -9,9 +9,10 @@ import {
   type AiSuggestionKind,
   type ContentItem,
   type ContentStatus,
-  type ContentType
+  type ContentType,
+  type MediaAsset
 } from '@sleb/shared/content';
-import type { FormEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 type ContentListResponse = {
@@ -21,6 +22,10 @@ type ContentListResponse = {
 
 type ContentDetailResponse = {
   item: ContentItem;
+};
+
+type MediaListResponse = {
+  assets: MediaAsset[];
 };
 
 type ContentFormState = {
@@ -58,25 +63,53 @@ const aiKinds: Array<{ value: AiSuggestionKind; label: string }> = [
   { value: 'image_prompt', label: 'Image prompt' }
 ];
 
+const roleOptions = [
+  { value: 'content_author', label: 'Content Author' },
+  { value: 'content_publisher', label: 'Content Publisher' },
+  { value: 'platform_admin', label: 'Platform Admin' }
+] as const;
+
+type ContentRole = (typeof roleOptions)[number]['value'];
+
 export function ContentDeskClient() {
   const [items, setItems] = useState<ContentItem[]>(seedContentItems);
-  const [counts, setCounts] = useState<Record<ContentStatus, number>>(countItems(seedContentItems));
-  const [selectedId, setSelectedId] = useState<string | undefined>(seedContentItems[0]?.id);
-  const [form, setForm] = useState<ContentFormState>(toForm(seedContentItems[0] ?? blankForm));
+  const [counts, setCounts] = useState<Record<ContentStatus, number>>(
+    countItems(seedContentItems)
+  );
+  const [selectedId, setSelectedId] = useState<string | undefined>(
+    seedContentItems[0]?.id
+  );
+  const [form, setForm] = useState<ContentFormState>(
+    toForm(seedContentItems[0] ?? blankForm)
+  );
   const [typeFilter, setTypeFilter] = useState<ContentType | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<ContentStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<ContentStatus | 'all'>(
+    'all'
+  );
   const [search, setSearch] = useState('');
-  const [notice, setNotice] = useState('Content seed loaded. Connecting to the publishing database.');
+  const [notice, setNotice] = useState(
+    'Content seed loaded. Connecting to the publishing database.'
+  );
   const [isBusy, setIsBusy] = useState(false);
   const [aiKind, setAiKind] = useState<AiSuggestionKind>('expand');
   const [aiInput, setAiInput] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | undefined>();
+  const [activeRole, setActiveRole] =
+    useState<ContentRole>('content_publisher');
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
 
-  const selectedConfig = contentTypeConfigs.find((config) => config.type === form.type);
+  const selectedConfig = contentTypeConfigs.find(
+    (config) => config.type === form.type
+  );
+  const activeActorName =
+    roleOptions.find((role) => role.value === activeRole)?.label ??
+    'Content Publisher';
+  const canPublishContent = activeRole !== 'content_author';
 
   useEffect(() => {
     void loadItems();
-  }, []);
+    void loadMedia();
+  }, [activeRole]);
 
   const visibleItems = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -98,7 +131,10 @@ export function ContentDeskClient() {
 
   async function loadItems() {
     try {
-      const response = await fetch('/api/content/items', { cache: 'no-store' });
+      const response = await fetch('/api/content/items', {
+        cache: 'no-store',
+        headers: contentHeaders()
+      });
 
       if (!response.ok) {
         throw new Error(`Content API returned ${response.status}`);
@@ -107,7 +143,8 @@ export function ContentDeskClient() {
       const data = (await response.json()) as ContentListResponse;
       setItems(data.items);
       setCounts(data.counts);
-      const nextSelected = data.items.find((item) => item.id === selectedId) ?? data.items[0];
+      const nextSelected =
+        data.items.find((item) => item.id === selectedId) ?? data.items[0];
 
       if (nextSelected) {
         setSelectedId(nextSelected.id);
@@ -116,9 +153,31 @@ export function ContentDeskClient() {
 
       setNotice('Content Desk is connected to the publishing database.');
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Content API unavailable; showing seed content.');
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : 'Content API unavailable; showing seed content.'
+      );
       setItems(seedContentItems);
       setCounts(countItems(seedContentItems));
+    }
+  }
+
+  async function loadMedia() {
+    try {
+      const response = await fetch('/api/content/media', {
+        cache: 'no-store',
+        headers: contentHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`Media API returned ${response.status}`);
+      }
+
+      const data = (await response.json()) as MediaListResponse;
+      setMediaAssets(data.assets);
+    } catch {
+      setMediaAssets([]);
     }
   }
 
@@ -135,7 +194,9 @@ export function ContentDeskClient() {
     setForm({
       ...blankForm,
       type,
-      metadata: Object.fromEntries((config?.fields ?? []).map((field) => [field.key, '']))
+      metadata: Object.fromEntries(
+        (config?.fields ?? []).map((field) => [field.key, ''])
+      )
     });
     setAiInput('');
     setAiSuggestion(undefined);
@@ -161,13 +222,14 @@ export function ContentDeskClient() {
     };
 
     try {
-      const response = await fetch(form.id ? `/api/content/items/${form.id}` : '/api/content/items', {
-        method: form.id ? 'PATCH' : 'POST',
-        headers: {
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+      const response = await fetch(
+        form.id ? `/api/content/items/${form.id}` : '/api/content/items',
+        {
+          method: form.id ? 'PATCH' : 'POST',
+          headers: contentHeaders(true),
+          body: JSON.stringify(payload)
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Save failed with ${response.status}`);
@@ -195,7 +257,9 @@ export function ContentDeskClient() {
 
     try {
       const response = await fetch(`/api/content/items/${form.id}/${action}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: contentHeaders(true),
+        body: '{}'
       });
 
       if (!response.ok) {
@@ -205,9 +269,13 @@ export function ContentDeskClient() {
       const data = (await response.json()) as ContentDetailResponse;
       setForm(toForm(data.item));
       await loadItems();
-      setNotice(`${contentStatusLabels[data.item.status]}: "${data.item.title}".`);
+      setNotice(
+        `${contentStatusLabels[data.item.status]}: "${data.item.title}".`
+      );
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Workflow action failed.');
+      setNotice(
+        error instanceof Error ? error.message : 'Workflow action failed.'
+      );
     } finally {
       setIsBusy(false);
     }
@@ -226,9 +294,7 @@ export function ContentDeskClient() {
     try {
       const response = await fetch('/api/content/ai/suggestions', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json'
-        },
+        headers: contentHeaders(true),
         body: JSON.stringify({
           itemId: form.id,
           kind: aiKind,
@@ -244,10 +310,77 @@ export function ContentDeskClient() {
       setAiSuggestion(data.suggestion);
       setNotice('AI assist draft generated for editorial review.');
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'AI suggestion failed.');
+      setNotice(
+        error instanceof Error ? error.message : 'AI suggestion failed.'
+      );
     } finally {
       setIsBusy(false);
     }
+  }
+
+  async function uploadHeroImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setNotice('Choose an image file for the media library.');
+      return;
+    }
+
+    setIsBusy(true);
+
+    try {
+      const data = await readFileAsDataUrl(file);
+      const response = await fetch('/api/content/media', {
+        method: 'POST',
+        headers: contentHeaders(true),
+        body: JSON.stringify({
+          filename: file.name,
+          mimeType: file.type,
+          data,
+          altText: form.title || file.name
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Media upload failed with ${response.status}`);
+      }
+
+      const payload = (await response.json()) as { asset: MediaAsset };
+      setForm((current) => ({ ...current, heroImage: payload.asset.url }));
+      setMediaAssets((current) => [payload.asset, ...current]);
+      setNotice(
+        `Uploaded "${payload.asset.filename}" and set it as hero image.`
+      );
+    } catch (error) {
+      setNotice(
+        error instanceof Error ? error.message : 'Media upload failed.'
+      );
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  function useHeroImage(asset: MediaAsset) {
+    setForm((current) => ({ ...current, heroImage: asset.url }));
+    setNotice(`Selected "${asset.filename}" as hero image.`);
+  }
+
+  function contentHeaders(withJson = false) {
+    const headers: Record<string, string> = {
+      'x-sleb-role': activeRole,
+      'x-sleb-actor-name': activeActorName
+    };
+
+    if (withJson) {
+      headers['content-type'] = 'application/json';
+    }
+
+    return headers;
   }
 
   return (
@@ -257,13 +390,31 @@ export function ContentDeskClient() {
           <p className="eyebrow">Content Desk</p>
           <h2>Editorial publishing workspace</h2>
           <p>
-            Manage shared editorial records while keeping technology listings in the Directory
-            Console.
+            Manage shared editorial records while keeping technology listings in
+            the Directory Console.
           </p>
         </div>
-        <button onClick={() => startNew('news')} type="button">
-          New Content
-        </button>
+        <div className="contentDeskControls">
+          <label>
+            Role
+            <select
+              aria-label="Active content role"
+              onChange={(event) =>
+                setActiveRole(event.target.value as ContentRole)
+              }
+              value={activeRole}
+            >
+              {roleOptions.map((role) => (
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button onClick={() => startNew('news')} type="button">
+            New Content
+          </button>
+        </div>
       </div>
 
       <div className="contentMetrics">
@@ -271,7 +422,11 @@ export function ContentDeskClient() {
           <button
             aria-pressed={statusFilter === status}
             key={status}
-            onClick={() => setStatusFilter(statusFilter === status ? 'all' : (status as ContentStatus))}
+            onClick={() =>
+              setStatusFilter(
+                statusFilter === status ? 'all' : (status as ContentStatus)
+              )
+            }
             type="button"
           >
             <span>{label}</span>
@@ -291,7 +446,9 @@ export function ContentDeskClient() {
             />
             <select
               aria-label="Filter content type"
-              onChange={(event) => setTypeFilter(event.target.value as ContentType | 'all')}
+              onChange={(event) =>
+                setTypeFilter(event.target.value as ContentType | 'all')
+              }
               value={typeFilter}
             >
               <option value="all">All types</option>
@@ -305,7 +462,11 @@ export function ContentDeskClient() {
 
           <div className="contentTypeShortcuts">
             {contentTypeConfigs.slice(0, 4).map((config) => (
-              <button key={config.type} onClick={() => startNew(config.type)} type="button">
+              <button
+                key={config.type}
+                onClick={() => startNew(config.type)}
+                type="button"
+              >
                 {config.label}
               </button>
             ))}
@@ -321,7 +482,13 @@ export function ContentDeskClient() {
               >
                 <span>{contentStatusLabels[item.status]}</span>
                 <strong>{item.title}</strong>
-                <small>{contentTypeConfigs.find((config) => config.type === item.type)?.label}</small>
+                <small>
+                  {
+                    contentTypeConfigs.find(
+                      (config) => config.type === item.type
+                    )?.label
+                  }
+                </small>
               </button>
             ))}
           </div>
@@ -331,20 +498,34 @@ export function ContentDeskClient() {
           <div className="contentNotice">{notice}</div>
           <div className="contentEditorHeader">
             <div>
-              <span>{form.id ? contentStatusLabels[form.status] : 'New draft'}</span>
+              <span>
+                {form.id ? contentStatusLabels[form.status] : 'New draft'}
+              </span>
               <h3>{form.title || 'Untitled content'}</h3>
             </div>
             <div className="contentActions">
               <button disabled={isBusy} type="submit">
                 Save
               </button>
-              <button disabled={isBusy || !form.id} onClick={() => changeWorkflow('submit')} type="button">
+              <button
+                disabled={isBusy || !form.id}
+                onClick={() => changeWorkflow('submit')}
+                type="button"
+              >
                 Submit
               </button>
-              <button disabled={isBusy || !form.id} onClick={() => changeWorkflow('publish')} type="button">
+              <button
+                disabled={isBusy || !form.id || !canPublishContent}
+                onClick={() => changeWorkflow('publish')}
+                type="button"
+              >
                 Publish
               </button>
-              <button disabled={isBusy || !form.id} onClick={() => changeWorkflow('unpublish')} type="button">
+              <button
+                disabled={isBusy || !form.id || !canPublishContent}
+                onClick={() => changeWorkflow('unpublish')}
+                type="button"
+              >
                 Unpublish
               </button>
             </div>
@@ -356,12 +537,16 @@ export function ContentDeskClient() {
               <select
                 onChange={(event) => {
                   const nextType = event.target.value as ContentType;
-                  const config = contentTypeConfigs.find((item) => item.type === nextType);
+                  const config = contentTypeConfigs.find(
+                    (item) => item.type === nextType
+                  );
                   setForm((current) => ({
                     ...current,
                     type: nextType,
                     metadata: {
-                      ...Object.fromEntries((config?.fields ?? []).map((field) => [field.key, ''])),
+                      ...Object.fromEntries(
+                        (config?.fields ?? []).map((field) => [field.key, ''])
+                      ),
                       ...current.metadata
                     }
                   }));
@@ -378,7 +563,12 @@ export function ContentDeskClient() {
             <label>
               Slug
               <input
-                onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    slug: event.target.value
+                  }))
+                }
                 value={form.slug}
               />
             </label>
@@ -387,7 +577,12 @@ export function ContentDeskClient() {
           <label>
             Title
             <input
-              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  title: event.target.value
+                }))
+              }
               required
               value={form.title}
             />
@@ -396,7 +591,12 @@ export function ContentDeskClient() {
           <label>
             Summary
             <textarea
-              onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  summary: event.target.value
+                }))
+              }
               rows={3}
               value={form.summary}
             />
@@ -405,7 +605,9 @@ export function ContentDeskClient() {
           <label>
             Body
             <textarea
-              onChange={(event) => setForm((current) => ({ ...current, body: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, body: event.target.value }))
+              }
               rows={10}
               value={form.body}
             />
@@ -415,14 +617,24 @@ export function ContentDeskClient() {
             <label>
               Hero image URL
               <input
-                onChange={(event) => setForm((current) => ({ ...current, heroImage: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    heroImage: event.target.value
+                  }))
+                }
                 value={form.heroImage}
               />
             </label>
             <label>
               SEO title
               <input
-                onChange={(event) => setForm((current) => ({ ...current, seoTitle: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    seoTitle: event.target.value
+                  }))
+                }
                 value={form.seoTitle}
               />
             </label>
@@ -432,7 +644,10 @@ export function ContentDeskClient() {
             SEO description
             <textarea
               onChange={(event) =>
-                setForm((current) => ({ ...current, seoDescription: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  seoDescription: event.target.value
+                }))
               }
               rows={2}
               value={form.seoDescription}
@@ -469,8 +684,39 @@ export function ContentDeskClient() {
 
         <aside className="contentAssistPanel">
           <section>
+            <h3>Media Library</h3>
+            <label className="mediaUpload">
+              Upload hero image
+              <input
+                accept="image/*"
+                disabled={isBusy}
+                onChange={uploadHeroImage}
+                type="file"
+              />
+            </label>
+            {form.heroImage ? (
+              <img alt="" className="contentHeroPreview" src={form.heroImage} />
+            ) : null}
+            <div className="mediaAssetList">
+              {mediaAssets.slice(0, 5).map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => useHeroImage(asset)}
+                  type="button"
+                >
+                  <span>{asset.filename}</span>
+                  <small>{formatFileSize(asset.sizeBytes)}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
             <h3>Directory-owned content</h3>
-            <p>Latest Technologies should stay in the directory model, not the editorial table.</p>
+            <p>
+              Latest Technologies should stay in the directory model, not the
+              editorial table.
+            </p>
             <div className="directoryMiniList">
               {seedTechnologyListings.map((item) => (
                 <a href={item.href} key={item.id}>
@@ -485,7 +731,9 @@ export function ContentDeskClient() {
             <h3>AI Assist</h3>
             <select
               aria-label="AI suggestion type"
-              onChange={(event) => setAiKind(event.target.value as AiSuggestionKind)}
+              onChange={(event) =>
+                setAiKind(event.target.value as AiSuggestionKind)
+              }
               value={aiKind}
             >
               {aiKinds.map((kind) => (
@@ -500,7 +748,11 @@ export function ContentDeskClient() {
               rows={5}
               value={aiInput}
             />
-            <button disabled={isBusy} onClick={requestAiSuggestion} type="button">
+            <button
+              disabled={isBusy}
+              onClick={requestAiSuggestion}
+              type="button"
+            >
               Generate Draft
             </button>
             {aiSuggestion ? <pre>{aiSuggestion.output}</pre> : null}
@@ -509,6 +761,29 @@ export function ContentDeskClient() {
       </div>
     </section>
   );
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(String(reader.result)));
+    reader.addEventListener('error', () =>
+      reject(reader.error ?? new Error('File read failed'))
+    );
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function toForm(item: ContentItem | ContentFormState): ContentFormState {

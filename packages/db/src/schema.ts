@@ -251,7 +251,7 @@ export const directoryEntries = pgTable(
 export const mediaAssets = pgTable(
   'media_assets',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: text('id').primaryKey(),
     objectKey: text('object_key').notNull(),
     filename: varchar('filename', { length: 320 }).notNull(),
     mimeType: varchar('mime_type', { length: 160 }).notNull(),
@@ -259,6 +259,9 @@ export const mediaAssets = pgTable(
     altText: text('alt_text'),
     caption: text('caption'),
     metadata: jsonb('metadata').default({}).notNull(),
+    createdByName: varchar('created_by_name', { length: 240 })
+      .default('Content Author')
+      .notNull(),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()

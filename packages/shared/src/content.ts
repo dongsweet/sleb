@@ -85,7 +85,13 @@ export type ContentVersion = {
 export type ContentWorkflowEvent = {
   id: string;
   itemId: string;
-  action: 'created' | 'updated' | 'submitted' | 'published' | 'unpublished' | 'archived';
+  action:
+    | 'created'
+    | 'updated'
+    | 'submitted'
+    | 'published'
+    | 'unpublished'
+    | 'archived';
   actorName: string;
   note?: string;
   createdAt: string;
@@ -98,6 +104,18 @@ export type AiSuggestion = {
   input: string;
   output: string;
   status: 'draft' | 'accepted' | 'dismissed';
+  createdByName: string;
+  createdAt: string;
+};
+
+export type MediaAsset = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  altText?: string;
+  caption?: string;
   createdByName: string;
   createdAt: string;
 };
@@ -122,7 +140,8 @@ export const contentTypeConfigs: ContentTypeConfig[] = [
   {
     type: 'news',
     label: 'News',
-    description: 'Announcements, industry updates, partner stories, and platform news.',
+    description:
+      'Announcements, industry updates, partner stories, and platform news.',
     workflowOwner: 'Content Publisher',
     template: 'article',
     fields: [
@@ -137,7 +156,12 @@ export const contentTypeConfigs: ContentTypeConfig[] = [
     workflowOwner: 'Content Publisher',
     template: 'event',
     fields: [
-      { key: 'startsAt', label: 'Start date and time', kind: 'datetime', required: true },
+      {
+        key: 'startsAt',
+        label: 'Start date and time',
+        kind: 'datetime',
+        required: true
+      },
       { key: 'endsAt', label: 'End date and time', kind: 'datetime' },
       { key: 'venue', label: 'Venue', kind: 'text' },
       { key: 'registrationUrl', label: 'Registration URL', kind: 'url' }
@@ -146,7 +170,8 @@ export const contentTypeConfigs: ContentTypeConfig[] = [
   {
     type: 'grant',
     label: 'Grants',
-    description: 'Funding schemes, calls for proposals, and application notices.',
+    description:
+      'Funding schemes, calls for proposals, and application notices.',
     workflowOwner: 'Content Publisher',
     template: 'funding',
     fields: [
@@ -175,7 +200,12 @@ export const contentTypeConfigs: ContentTypeConfig[] = [
     workflowOwner: 'Content Publisher',
     template: 'document',
     fields: [
-      { key: 'documentUrl', label: 'Document URL', kind: 'file', required: true },
+      {
+        key: 'documentUrl',
+        label: 'Document URL',
+        kind: 'file',
+        required: true
+      },
       { key: 'publishedOn', label: 'Publication date', kind: 'date' }
     ]
   },
@@ -194,7 +224,12 @@ export const contentTypeConfigs: ContentTypeConfig[] = [
     workflowOwner: 'Platform Admin',
     template: 'policy',
     fields: [
-      { key: 'effectiveDate', label: 'Effective date', kind: 'date', required: true },
+      {
+        key: 'effectiveDate',
+        label: 'Effective date',
+        kind: 'date',
+        required: true
+      },
       { key: 'revisionNote', label: 'Revision note', kind: 'text' }
     ]
   }
@@ -236,12 +271,12 @@ export const seedContentItems: ContentItem[] = [
   {
     id: 'event-ieec-faq',
     type: 'event',
-    title: 'Frequently Asked Questions About Intelligent Energy Efficiency Calculator',
+    title:
+      'Frequently Asked Questions About Intelligent Energy Efficiency Calculator',
     slug: 'intelligent-energy-efficiency-calculator-faq',
     summary:
       'A practical question-and-answer session on using intelligent calculators in Green Mark submissions.',
-    body:
-      'This session explains common questions about the Intelligent Energy Efficiency Calculator, including inputs, evidence expectations, and Green Mark alignment.',
+    body: 'This session explains common questions about the Intelligent Energy Efficiency Calculator, including inputs, evidence expectations, and Green Mark alignment.',
     status: 'published',
     metadata: {
       startsAt: '2026-06-18T09:30:00+08:00',
@@ -250,7 +285,8 @@ export const seedContentItems: ContentItem[] = [
     },
     seo: {
       title: 'Intelligent Energy Efficiency Calculator FAQ',
-      description: 'Frequently asked questions for the SLEB Intelligent Energy Efficiency Calculator.'
+      description:
+        'Frequently asked questions for the SLEB Intelligent Energy Efficiency Calculator.'
     },
     authorName: 'Content Author',
     reviewerName: 'Content Publisher',
@@ -266,8 +302,7 @@ export const seedContentItems: ContentItem[] = [
     slug: 'ibew-2021-enhanced-digital-format',
     summary:
       'International Built Environment Week returns with digital programming for the built environment sector.',
-    body:
-      'The event brings together policy, technology, and industry leaders to discuss progress in sustainable built environment practices.',
+    body: 'The event brings together policy, technology, and industry leaders to discuss progress in sustainable built environment practices.',
     status: 'published',
     metadata: {
       startsAt: '2026-09-03T10:00:00+08:00',
@@ -287,8 +322,7 @@ export const seedContentItems: ContentItem[] = [
     slug: 'pilot-intelligent-energy-efficiency-calculator',
     summary:
       'A pilot programme introducing calculator-assisted evaluation for Green Mark project teams.',
-    body:
-      'Participants will learn the calculator workflow, required evidence, and expected review boundaries for pilot use cases.',
+    body: 'Participants will learn the calculator workflow, required evidence, and expected review boundaries for pilot use cases.',
     status: 'in_review',
     metadata: {
       startsAt: '2026-07-10T14:00:00+08:00',
@@ -307,8 +341,7 @@ export const seedContentItems: ContentItem[] = [
     slug: 'green-mark-super-low-energy-solutions-package',
     summary:
       'New package guidance helps project teams identify energy-saving solutions for Green Mark targets.',
-    body:
-      'The package consolidates super low energy solution options, submission considerations, and references for project teams.',
+    body: 'The package consolidates super low energy solution options, submission considerations, and references for project teams.',
     status: 'published',
     metadata: {
       topic: 'Green Mark'
@@ -327,8 +360,7 @@ export const seedContentItems: ContentItem[] = [
     slug: 'bca-green-mark-2021-is-refreshed',
     summary:
       'Green Mark 2021 refresh highlights stronger sustainability outcomes and performance pathways.',
-    body:
-      'The refreshed Green Mark framework encourages better energy performance, maintainability, and measurable outcomes.',
+    body: 'The refreshed Green Mark framework encourages better energy performance, maintainability, and measurable outcomes.',
     status: 'published',
     metadata: {
       topic: 'Certification'
@@ -347,8 +379,7 @@ export const seedContentItems: ContentItem[] = [
     slug: 'intelligent-energy-efficiency-calculator-for-green-mark',
     summary:
       'Calculator-assisted workflows support early evaluation of energy efficiency measures.',
-    body:
-      'The Intelligent Energy Efficiency Calculator helps users explore measures, compare options, and prepare project decisions.',
+    body: 'The Intelligent Energy Efficiency Calculator helps users explore measures, compare options, and prepare project decisions.',
     status: 'draft',
     metadata: {
       topic: 'Tools'
@@ -361,12 +392,12 @@ export const seedContentItems: ContentItem[] = [
   {
     id: 'grant-transnational-rd',
     type: 'grant',
-    title: 'Launch of Transnational R&D Challenge Call for Next-Generation Green Building Technologies',
+    title:
+      'Launch of Transnational R&D Challenge Call for Next-Generation Green Building Technologies',
     slug: 'transnational-rd-challenge-call-next-generation-green-building-technologies',
     summary:
       'A challenge call inviting proposals for next-generation green building technologies.',
-    body:
-      'The call supports collaborative research and development projects that can accelerate adoption of advanced green building solutions.',
+    body: 'The call supports collaborative research and development projects that can accelerate adoption of advanced green building solutions.',
     status: 'published',
     metadata: {
       agency: 'BCA',
@@ -389,8 +420,7 @@ export const seedContentItems: ContentItem[] = [
     slug: 'third-joint-challenge-call-bca-enterprise-singapore',
     summary:
       'A closed challenge call for solutions that improve building energy efficiency and sustainability.',
-    body:
-      'The joint challenge call brought together BCA and Enterprise Singapore to support promising sustainable built environment solutions.',
+    body: 'The joint challenge call brought together BCA and Enterprise Singapore to support promising sustainable built environment solutions.',
     status: 'published',
     metadata: {
       agency: 'BCA / Enterprise Singapore',
