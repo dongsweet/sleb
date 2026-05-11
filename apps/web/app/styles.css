@@ -885,3 +885,729 @@ small {
     gap: 5px;
   }
 }
+
+/* SLEB homepage reconstruction */
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: block;
+  min-height: 76px;
+  padding: 0;
+  border-bottom: 0;
+  background: url('/sleb-assets/home-banner.jpg') no-repeat center center;
+  background-attachment: fixed;
+  background-size: cover;
+  box-shadow: none;
+}
+
+.siteHeaderInner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 76px;
+  margin: 0 auto;
+  padding: 0 max(24px, calc((100vw - 1100px) / 2));
+  background: rgba(33, 33, 33, 0.6);
+}
+
+.brandMark {
+  min-width: 118px;
+}
+
+.brandMark img {
+  display: block;
+  width: auto;
+  height: 76px;
+}
+
+.topNav {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.navItem {
+  position: relative;
+}
+
+.navItem > a,
+.headerLink,
+.headerCta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 76px;
+  padding: 0 12px;
+  border-radius: 0;
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.navItem > a:hover,
+.navItem > a[aria-current='page'],
+.headerLink:hover {
+  background: transparent;
+  color: #c1c1c1;
+  box-shadow: none;
+}
+
+.navItem:has(.navDropdown) > a::after {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-left: 6px;
+  border-top: 4px solid currentColor;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+.navDropdown {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  min-width: 238px;
+  padding: 8px 0;
+  border-top: 3px solid #04c648;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
+}
+
+.navItem:hover .navDropdown,
+.navItem:focus-within .navDropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.navDropdown a {
+  display: block;
+  padding: 11px 18px;
+  color: #242424;
+  font-size: 0.86rem;
+}
+
+.navDropdown a:hover {
+  background: rgba(4, 198, 72, 0.08);
+  color: #04c648;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.headerCta {
+  min-height: 76px;
+  padding: 0 0 0 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+}
+
+.headerCta:hover {
+  background: transparent;
+  color: #c1c1c1;
+}
+
+.headerLink {
+  min-height: 76px;
+  padding: 0 2px;
+  color: #ffffff;
+  font-size: 0.8rem;
+}
+
+.slebHome {
+  background: #f6f6f6;
+  color: #242424;
+  font-family:
+    Arial,
+    Helvetica,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+.slebHero {
+  position: relative;
+  min-height: 412px;
+  overflow: hidden;
+  background: url('/sleb-assets/home-banner.jpg') no-repeat center center;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+.slebHeroOverlay {
+  display: grid;
+  min-height: 412px;
+  place-items: center;
+  background: rgba(33, 33, 33, 0.52);
+}
+
+.slebHeroContent {
+  z-index: 1;
+  width: min(480px, calc(100% - 44px));
+  color: #ffffff;
+  text-align: center;
+}
+
+.slebHeroContent h1 {
+  max-width: none;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.slebHeroContent p {
+  margin: 16px 0 36px;
+  font-size: 1rem;
+  line-height: 1.28;
+}
+
+.slebSearch {
+  display: flex;
+  align-items: center;
+  width: min(370px, 100%);
+  height: 48px;
+  margin: 0 auto;
+  padding: 4px;
+  overflow: hidden;
+  border: 2px solid #eeeeee;
+  border-radius: 24px;
+  background: #ffffff;
+}
+
+.slebSearch input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0 10px;
+  border: 0;
+  color: #242424;
+  font-size: 1rem;
+  outline: 0;
+}
+
+.slebSearch button {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: #04c648 url('/sleb-assets/banner-search.png') no-repeat center;
+  background-size: 24px 24px;
+  cursor: pointer;
+}
+
+.slebMain {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 42px 0 64px;
+}
+
+.slebTitle {
+  margin: 0 0 26px;
+  color: #242424;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.slebServices,
+.slebUpdates,
+.slebAbout {
+  margin-bottom: 56px;
+}
+
+.slebServiceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.slebServiceCard {
+  position: relative;
+  min-height: 285px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(183, 183, 183, 0.5);
+}
+
+.slebServiceFace,
+.slebServiceLinks {
+  position: absolute;
+  inset: 0;
+  transition: opacity 220ms ease;
+}
+
+.slebServiceFace {
+  padding: 24px 16px;
+  background: #ffffff;
+}
+
+.slebServiceFace img {
+  display: block;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.slebServiceFace h3 {
+  margin: 16px 0;
+  color: #04c648;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.slebServiceFace p {
+  margin: 0;
+  color: #242424;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.slebServiceLinks {
+  display: grid;
+  border-top: 8px solid #04c648;
+  background: #ffffff;
+  opacity: 0;
+}
+
+.slebServiceCard:hover .slebServiceFace:not(.slebServiceLink),
+.slebServiceCard:focus-within .slebServiceFace:not(.slebServiceLink) {
+  opacity: 0;
+}
+
+.slebServiceCard:hover .slebServiceLinks,
+.slebServiceCard:focus-within .slebServiceLinks {
+  opacity: 1;
+}
+
+.slebServiceLinks a,
+.slebLinkList a {
+  display: flex;
+  align-items: center;
+  min-height: 50%;
+  padding: 0 38px 0 16px;
+  color: #242424;
+  font-size: 1rem;
+  line-height: 1.25;
+  background: url('/sleb-assets/arrow-right-green.svg') no-repeat right 14px center;
+  background-size: 14px 14px;
+}
+
+.slebServiceLinks a + a,
+.slebLinkList a + a {
+  border-top: 1px solid rgba(187, 187, 187, 0.5);
+}
+
+.slebServiceLinks a:hover,
+.slebLinkList a:hover {
+  background-color: rgba(187, 187, 187, 0.2);
+}
+
+.slebServiceLink {
+  display: block;
+  color: inherit;
+}
+
+.slebUpdateGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 30px;
+}
+
+.slebUpdatePanel {
+  grid-column: span 5;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(183, 183, 183, 0.5);
+}
+
+.slebUpdatePanel.wide {
+  grid-column: span 7;
+}
+
+.slebPanelTitle {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(187, 187, 187, 0.5);
+}
+
+.slebPanelTitle h3 {
+  margin: 0;
+  color: #04c648;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.slebPanelTitle a {
+  color: #04c648;
+  font-size: 0.88rem;
+}
+
+.slebLinkList {
+  display: grid;
+  min-height: 204px;
+}
+
+.slebLinkList a {
+  min-height: auto;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.slebAbout {
+  color: #000000;
+  font-size: 1rem;
+}
+
+.slebAbout .slebTitle {
+  margin-bottom: 12px;
+}
+
+.slebAboutTimeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 48px;
+  padding: 40px 0;
+}
+
+.slebAboutTimeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 10px;
+  border-radius: 5px;
+  background: #04c648;
+  transform: translateX(-50%);
+}
+
+.slebAboutCopy,
+.slebAboutGoals {
+  position: relative;
+  z-index: 1;
+}
+
+.slebAboutCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0;
+  padding: 0 24px 0 18px;
+}
+
+.slebAboutCopy li {
+  line-height: 1.35;
+}
+
+.slebAboutGoals {
+  display: grid;
+  gap: 26px;
+  padding-left: 24px;
+}
+
+.slebAboutGoals article {
+  position: relative;
+}
+
+.slebAboutGoals article::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: -29px;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #04c648;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.slebAboutGoals h3 {
+  margin: 0 0 16px;
+  color: #242424;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.slebAboutGoals p {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.slebVideo {
+  margin: 64px 0 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #111111;
+  box-shadow: 0 4px 8px rgba(183, 183, 183, 0.5);
+}
+
+.slebVideo iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
+.siteFooter {
+  display: block;
+  padding: 36px 0 0;
+  border-top: 0;
+  background: #3eb165;
+  color: #ffffff;
+}
+
+.siteFooter h2 {
+  margin: 0 0 14px;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.siteFooter p,
+.siteFooter a,
+.siteFooter span {
+  color: #ffffff;
+}
+
+.siteFooterInner {
+  display: grid;
+  grid-template-columns: 1.08fr 1fr 0.9fr;
+  gap: 42px;
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.siteFooter p {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.footerButtons {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0 22px;
+}
+
+.footerButtons a {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #3eb165;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.footerLogos {
+  display: grid;
+  gap: 16px;
+}
+
+.footerLogos div {
+  display: grid;
+  gap: 8px;
+}
+
+.footerLogos span {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.footerLogos a {
+  display: inline-flex;
+  width: 156px;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.footerLogos img {
+  max-width: 132px;
+  max-height: 44px;
+  object-fit: contain;
+}
+
+.footerHub a {
+  display: inline-block;
+  font-weight: 800;
+}
+
+.footerContact a {
+  display: block;
+  font-weight: 800;
+}
+
+.footerLogo {
+  display: inline-block;
+  margin-bottom: 18px;
+}
+
+.footerLogo img {
+  width: 152px;
+  height: auto;
+}
+
+.footerAdmin {
+  margin-top: 10px;
+}
+
+.footerCopyright {
+  margin: 30px 0 0;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.12);
+  color: #ffffff;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+@media (max-width: 1080px) {
+  .siteHeaderInner {
+    grid-template-columns: auto 1fr;
+    padding: 10px 0;
+  }
+
+  .topNav {
+    order: 3;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .navItem > a {
+    min-height: 42px;
+  }
+
+  .headerActions {
+    justify-self: end;
+  }
+
+  .slebServiceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .siteHeader {
+    position: static;
+  }
+
+  .siteHeaderInner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: min(100% - 24px, 1100px);
+  }
+
+  .brandMark,
+  .headerActions {
+    justify-self: start;
+  }
+
+  .topNav {
+    width: 100%;
+  }
+
+  .navDropdown {
+    display: none;
+  }
+
+  .slebHero {
+    background-attachment: scroll;
+  }
+
+  .slebHeroContent h1 {
+    font-size: 1.72rem;
+  }
+
+  .slebHeroContent p {
+    font-size: 0.95rem;
+  }
+
+  .slebServiceGrid,
+  .slebUpdateGrid,
+  .siteFooterInner {
+    grid-template-columns: 1fr;
+  }
+
+  .slebUpdatePanel,
+  .slebUpdatePanel.wide {
+    grid-column: auto;
+  }
+
+  .slebAboutTimeline {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 14px 0 0;
+  }
+
+  .slebAboutTimeline::before,
+  .slebAboutGoals article::before {
+    display: none;
+  }
+
+  .slebAboutCopy,
+  .slebAboutGoals {
+    padding: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .headerActions {
+    flex-wrap: wrap;
+  }
+
+  .slebHeroContent {
+    width: calc(100% - 28px);
+  }
+
+  .slebServiceGrid {
+    gap: 16px;
+  }
+
+  .slebServiceCard {
+    min-height: 260px;
+  }
+}

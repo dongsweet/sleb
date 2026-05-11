@@ -1,242 +1,241 @@
-import { membershipLevels } from '@sleb/shared';
 import { SiteChrome } from './components/SiteChrome';
 
 const services = [
   {
+    key: 'buildings',
     title: 'Buildings',
-    summary: 'Search Green Mark buildings, project references, and efficiency records.',
-    href: '/buildings/green-mark-directory',
-    image:
-      'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80'
+    summary: 'Green Mark projects directory and statistical building energy performance dashboard.',
+    icon: '/sleb-assets/service-building.png',
+    links: [
+      { label: 'Green Mark projects directory', href: '/buildings/green-mark-directory' },
+      { label: 'Statistical building energy performance dashboard', href: '/buildings/energy-benchmarking' }
+    ]
   },
   {
+    key: 'technologies',
     title: 'Technologies',
-    summary: 'Explore products, systems, and solutions for super low energy outcomes.',
-    href: '/technologies',
-    image:
-      'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=80'
+    summary: 'Technologies and products directory.',
+    icon: '/sleb-assets/service-technologies.png',
+    links: [
+      { label: 'Find latest green technologies and products', href: '/technologies' },
+      { label: 'Register my technology', href: '/technologies?type=my' }
+    ]
   },
   {
+    key: 'finance',
     title: 'Green Finance',
-    summary: 'Find grants, incentives, and support pathways for adoption projects.',
-    href: '/grants-and-incentives',
-    image:
-      'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80'
+    summary: 'Predict the energy efficient level of your home or building before move-in.',
+    icon: '/sleb-assets/service-projects.png',
+    links: [
+      { label: 'Tropical Home Energy Efficiency Assessment', href: '/theea' },
+      { label: 'Tropical Building Energy Efficiency Assessment', href: '/beea' }
+    ]
   },
   {
+    key: 'calculator',
     title: 'AI Calculator',
-    summary: 'Start a guided assessment for energy-saving measures and project options.',
-    href: '/ai-calculator',
-    image:
-      'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=900&q=80'
+    summary: 'Assess or verify your project\'s energy efficiency level under Green Mark frameworks.',
+    icon: '/sleb-assets/icon-verify.svg',
+    href: '/ai-calculator'
   }
 ];
 
-const updates = [
+const updatePanels = [
   {
-    type: 'News',
-    title: 'New retrofit guidance for commercial buildings',
-    date: 'May 2026',
-    href: '/news'
+    title: 'Events',
+    href: '/events',
+    wide: false,
+    items: [
+      {
+        label: 'Frequently Asked Questions About Intelligent Energy Efficiency Calculator',
+        href: '/events/intelligent-energy-efficiency-calculator-faq'
+      },
+      {
+        label: 'IBEW 2021 Returns With Enhanced Digital Format in September',
+        href: '/events/ibew-2021'
+      },
+      {
+        label: 'Pilot Intelligent Energy Efficiency Calculator for Green Mark',
+        href: '/events/pilot-intelligent-energy-efficiency-calculator'
+      }
+    ]
   },
   {
-    type: 'Event',
-    title: 'Super low energy design workshop',
-    date: 'Jun 2026',
-    href: '/events'
+    title: 'News',
+    href: '/news',
+    wide: true,
+    items: [
+      {
+        label: 'Green Mark Super Low Energy Solutions Package',
+        href: '/news/green-mark-super-low-energy-solutions-package'
+      },
+      { label: 'BCA Green Mark 2021 is Refreshed', href: '/news/bca-green-mark-2021' },
+      {
+        label: 'Intelligent Energy Efficiency Calculator for Green Mark',
+        href: '/news/intelligent-energy-efficiency-calculator'
+      }
+    ]
   },
   {
-    type: 'Grant',
-    title: 'Support schemes for energy performance upgrades',
-    date: 'Open',
-    href: '/grants-and-incentives'
+    title: 'Grants',
+    href: '/grants-and-incentives',
+    wide: false,
+    items: [
+      {
+        label: 'Launch of Transnational R&D Challenge Call for Next-Generation Green Building Technologies',
+        href: '/grants-and-incentives/transnational-rd-challenge-call'
+      },
+      {
+        label:
+          '[Closed] Launch of the 3rd Joint Challenge Call by the Building and Construction Authority (BCA) and Enterprise Singapore (ESG)',
+        href: '/grants-and-incentives/joint-challenge-call'
+      }
+    ]
   },
   {
-    type: 'Technology',
-    title: 'Featured control systems and monitoring solutions',
-    date: 'Latest',
-    href: '/technologies'
+    title: 'Latest Technologies',
+    href: '/technologies',
+    wide: true,
+    items: [
+      { label: 'Deep Energy AI', href: '/technologies/deep-energy-ai' },
+      { label: 'Chiller Plant Energy Optimization', href: '/technologies/chiller-plant-energy-optimization' },
+      { label: 'Building-attached Photovoltaic System (BaPV)', href: '/technologies/building-attached-photovoltaic-system' }
+    ]
   }
 ];
 
-const assessmentTools = [
+const aboutPoints = [
+  'The Super Low Energy Building (SLEB) Smart Hub aims to be a national digital platform for energy efficiency of built environment. It consists of a variety of databases and software applications in support of the Singapore Green Building Masterplan (SGBMP) target of achieving 80% energy efficiency by 2030.',
+  'SLEB Smart Hub collects data from various sources and links different databases. It provides unique data analytics functions to enable data-driven decision-making to facilitate energy-efficient built environment in Singapore.',
+  'We aim to use SLEB Smart Hub platform to foster closer collaborations among building owners and developers, contractors and consultants, green technology companies and green financiers to work together to build a more sustainable built environment for Singapore.'
+];
+
+const aboutGoals = [
   {
-    title: 'Energy Benchmarking',
-    summary: 'Compare performance across building type, intensity, and operating profile.',
-    href: '/buildings/energy-benchmarking'
+    title: 'Vision',
+    body: 'To be an industry-leading, central resource centre for energy-efficient built environment.'
   },
   {
-    title: 'BEEA',
-    summary: 'Prepare building energy efficiency assessment records and evidence.',
-    href: '/beea'
+    title: 'Mission',
+    body:
+      'Capture the value of energy performance data of buildings and technologies, and support decision-making in adopting energy-efficient technologies.'
   },
   {
-    title: 'SMEEA',
-    summary: 'Run SME-focused self-assessments with report entitlement by plan.',
-    href: '/smeea'
+    title: 'Objective',
+    body:
+      'Support Singapore Green Building Masterplan (SGBMP) targets and BCA Green Mark certification scheme for a more sustainable Singapore.'
   }
 ];
 
 export default function HomePage() {
   return (
     <SiteChrome activeArea="Home">
-      <main>
-        <section className="homeHero">
-          <div className="homeHeroOverlay">
-            <div className="homeHeroCopy">
-              <p className="eyebrow">Singapore Super Low Energy Building</p>
-              <h1>Super Low Energy Building Smart Hub</h1>
-              <p className="lede">
-                Discover buildings, technologies, services, funding pathways, and assessment tools
-                that support the move toward high-performance, low-energy buildings.
+      <main className="slebHome">
+        <section className="slebHero">
+          <div className="slebHeroOverlay">
+            <div className="slebHeroContent">
+              <h1>Empowering the present for a sustainable future</h1>
+              <p>
+                SLEB Smart Hub offers smart services and resources to transform your buildings.
+                We leverage cutting-edge data, knowledge, and artificial intelligence to help your
+                buildings achieve Super Low Energy target.
               </p>
-              <div className="heroActions">
-                <a className="primaryButton" href="/buildings/green-mark-directory">
-                  Explore Buildings
-                </a>
-                <a className="secondaryButton" href="/membership/register">
-                  Become a Member
-                </a>
-              </div>
-            </div>
-            <div className="homeHeroPanel">
-              <span>Smart Hub</span>
-              <strong>One platform for green building data, member tools, and market resources.</strong>
+              <form action="/search" className="slebSearch" method="get">
+                <input aria-label="Search resources, database and news" name="q" placeholder="Search Resources, Database & News" />
+                <button aria-label="Search" type="submit" />
+              </form>
             </div>
           </div>
         </section>
 
-        <section className="quickStats" aria-label="SLEB data highlights">
-          <div>
-            <strong>4,600+</strong>
-            <span>Green Mark building records</span>
-          </div>
-          <div>
-            <strong>160+</strong>
-            <span>Technology listings</span>
-          </div>
-          <div>
-            <strong>500+</strong>
-            <span>Dictionary terms</span>
-          </div>
-          <div>
-            <strong>3</strong>
-            <span>Membership plans</span>
-          </div>
-        </section>
-
-        <section className="band">
-          <div className="sectionHeader">
-            <div>
-              <p className="eyebrow">Our services</p>
-              <h2>Find the right resource for your next low-energy project.</h2>
-            </div>
-            <p>
-              Start with a building record, compare technologies, look for implementation partners,
-              or review available support schemes.
-            </p>
-          </div>
-          <div className="serviceGrid">
-            {services.map((service) => (
-              <a className="serviceTile" href={service.href} key={service.title}>
-                <span style={{ backgroundImage: `url(${service.image})` }} />
-                <div>
-                  <h3>{service.title}</h3>
-                  <p>{service.summary}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        <section className="band bandAlt">
-          <div className="sectionHeader">
-            <div>
-              <p className="eyebrow">Tools and assessments</p>
-              <h2>Support decisions with benchmarking and member assessments.</h2>
-            </div>
-            <p>
-              Benchmarking and assessment workspaces help teams evaluate performance and prepare
-              decision-ready records.
-            </p>
-          </div>
-          <div className="toolStrip">
-            {assessmentTools.map((tool) => (
-              <a className="toolCard" href={tool.href} key={tool.title}>
-                <h3>{tool.title}</h3>
-                <p>{tool.summary}</p>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        <section className="band homeSplit">
-          <div className="aboutPanel">
-            <p className="eyebrow">About us</p>
-            <h2>Accelerating adoption of super low energy buildings.</h2>
-            <p>
-              SLEB brings together building data, technologies, services, tools, and knowledge so
-              owners, professionals, solution providers, and agencies can work from a common hub.
-            </p>
-            <div className="missionGrid">
-              <div>
-                <strong>Vision</strong>
-                <span>A built environment that uses less energy and performs better.</span>
-              </div>
-              <div>
-                <strong>Mission</strong>
-                <span>Make proven solutions, references, and assessments easier to access.</span>
-              </div>
-              <div>
-                <strong>Objective</strong>
-                <span>Connect projects, people, technologies, and incentives in one workflow.</span>
-              </div>
-            </div>
-          </div>
-          <aside className="membershipPanel">
-            <p className="eyebrow">Membership</p>
-            <h2>Member tools unlock by company plan.</h2>
-            <div className="homePlanList">
-              {membershipLevels.map((plan) => (
-                <a href="/membership" key={plan.id}>
-                  <span>{plan.name}</span>
-                  <strong>{plan.displayPrice}</strong>
-                </a>
+        <div className="slebMain">
+          <section className="slebServices" aria-labelledby="services-title">
+            <h2 className="slebTitle" id="services-title">
+              Our Services
+            </h2>
+            <div className="slebServiceGrid">
+              {services.map((service) => (
+                <article className={`slebServiceCard ${service.key}`} key={service.title}>
+                  {service.href ? (
+                    <a className="slebServiceFace slebServiceLink" href={service.href}>
+                      <img alt="" src={service.icon} />
+                      <h3>{service.title}</h3>
+                      <p>{service.summary}</p>
+                    </a>
+                  ) : (
+                    <>
+                      <div className="slebServiceFace">
+                        <img alt="" src={service.icon} />
+                        <h3>{service.title}</h3>
+                        <p>{service.summary}</p>
+                      </div>
+                      <div className="slebServiceLinks">
+                        {service.links?.map((link) => (
+                          <a href={link.href} key={link.label}>
+                            {link.label}
+                          </a>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </article>
               ))}
             </div>
-          </aside>
-        </section>
+          </section>
 
-        <section className="band bandAlt">
-          <div className="sectionHeader">
-            <div>
-              <p className="eyebrow">News and updates</p>
-              <h2>Latest from the Smart Hub.</h2>
+          <section className="slebUpdates" aria-labelledby="updates-title">
+            <h2 className="slebTitle" id="updates-title">
+              News & Updates
+            </h2>
+            <div className="slebUpdateGrid">
+              {updatePanels.map((panel) => (
+                <article className={panel.wide ? 'slebUpdatePanel wide' : 'slebUpdatePanel'} key={panel.title}>
+                  <div className="slebPanelTitle">
+                    <h3>{panel.title}</h3>
+                    <a href={panel.href}>All</a>
+                  </div>
+                  <div className="slebLinkList">
+                    {panel.items.map((item) => (
+                      <a href={item.href} key={item.label}>
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                </article>
+              ))}
             </div>
-            <p>Browse announcements, workshops, funding notes, and featured marketplace updates.</p>
-          </div>
-          <div className="updateGrid">
-            {updates.map((item) => (
-              <a className="updateCard" href={item.href} key={item.title}>
-                <span>{item.type}</span>
-                <h3>{item.title}</h3>
-                <small>{item.date}</small>
-              </a>
-            ))}
-          </div>
-        </section>
+          </section>
 
-        <section className="subscribeBand">
-          <div>
-            <p className="eyebrow">Keep in touch</p>
-            <h2>Receive news, events, and technology updates.</h2>
-          </div>
-          <form className="subscribeForm">
-            <label htmlFor="home-email">Email address</label>
-            <input id="home-email" name="email" placeholder="you@example.com" type="email" />
-            <button type="submit">Subscribe</button>
-          </form>
-        </section>
+          <section className="slebAbout" aria-labelledby="about-title">
+            <h2 className="slebTitle" id="about-title">
+              About Us
+            </h2>
+            <div className="slebAboutTimeline">
+              <ul className="slebAboutCopy">
+                {aboutPoints.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+              <div className="slebAboutGoals">
+                {aboutGoals.map((goal) => (
+                  <article key={goal.title}>
+                    <h3>{goal.title}</h3>
+                    <p>{goal.body}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="slebVideo" aria-label="SLEB Smart Hub video">
+            <iframe
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              src="https://www.youtube.com/embed/VRqFnYVJMCU"
+              title="SLEB Smart Hub video"
+            />
+          </section>
+        </div>
       </main>
     </SiteChrome>
   );
