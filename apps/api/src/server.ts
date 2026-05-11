@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import Fastify from 'fastify';
+import { registerContentRoutes } from './modules/content/routes.js';
 import { registerHealthRoutes } from './modules/health/routes.js';
 import { registerMembershipRoutes } from './modules/membership/routes.js';
 
@@ -24,6 +25,7 @@ export async function buildServer() {
 
   await registerHealthRoutes(app);
   await registerMembershipRoutes(app);
+  await registerContentRoutes(app);
 
   return app;
 }

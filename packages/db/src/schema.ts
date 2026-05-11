@@ -44,6 +44,32 @@ export const directoryTypeEnum = pgEnum('directory_type', [
 
 export const assessmentTypeEnum = pgEnum('assessment_type', ['theea', 'beea', 'smeea', 'ai_calculator']);
 
+export const contentTypeEnum = pgEnum('content_type', [
+  'news',
+  'event',
+  'grant',
+  'incentive',
+  'publication',
+  'static_page',
+  'policy'
+]);
+
+export const contentStatusEnum = pgEnum('content_status', [
+  'draft',
+  'in_review',
+  'published',
+  'scheduled',
+  'archived'
+]);
+
+export const aiSuggestionKindEnum = pgEnum('ai_suggestion_kind', [
+  'expand',
+  'summarize',
+  'seo',
+  'alt_text',
+  'image_prompt'
+]);
+
 export const users = pgTable(
   'users',
   {
@@ -176,6 +202,111 @@ export const directoryEntries = pgTable(
     slugIdx: uniqueIndex('directory_entries_slug_idx').on(table.slug),
     typeIdx: index('directory_entries_type_idx').on(table.type),
     ownerCompanyIdx: index('directory_entries_owner_company_idx').on(table.ownerCompanyId)
+  })
+);
+
+export const mediaAssets = pgTable(
+  'media_assets',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    objectKey: text('object_key').notNull(),
+    filename: varchar('filename', { length: 320 }).notNull(),
+    mimeType: varchar('mime_type', { length: 160 }).notNull(),
+    sizeBytes: integer('size_bytes').default(0).notNull(),
+    altText: text('alt_text'),
+    caption: text('caption'),
+    metadata: jsonb('metadata').default({}).notNull(),
+    createdByUserId: uuid('created_by_user_id').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    objectKeyIdx: uniqueIndex('media_assets_object_key_idx').on(table.objectKey),
+    mimeTypeIdx: index('media_assets_mime_type_idx').on(table.mimeType)
+  })
+);
+
+export const contentItems = pgTable(
+  'content_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    type: contentTypeEnum('type').notNull(),
+    title: varchar('title', { length: 280 }).notNull(),
+    slug: varchar('slug', { length: 320 }).notNull(),
+    summary: text('summary'),
+    body: text('body').default('').notNull(),
+    status: contentStatusEnum('status').default('draft').notNull(),
+    heroImageAssetId: uuid('hero_image_asset_id').references(() => mediaAssets.id),
+    metadata: jsonb('metadata').default({}).notNull(),
+    seo: jsonb('seo').default({}).notNull(),
+    authorUserId: uuid('author_user_id').references(() => users.id),
+    reviewerUserId: uuid('reviewer_user_id').references(() => users.id),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    scheduledFor: timestamp('scheduled_for', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    typeSlugIdx: uniqueIndex('content_items_type_slug_idx').on(table.type, table.slug),
+    typeStatusIdx: index('content_items_type_status_idx').on(table.type, table.status),
+    publishedAtIdx: index('content_items_published_at_idx').on(table.publishedAt)
+  })
+);
+
+export const contentVersions = pgTable(
+  'content_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemId: uuid('item_id')
+      .references(() => contentItems.id)
+      .notNull(),
+    versionNumber: integer('version_number').notNull(),
+    snapshot: jsonb('snapshot').notNull(),
+    createdByUserId: uuid('created_by_user_id').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    itemVersionIdx: uniqueIndex('content_versions_item_version_idx').on(
+      table.itemId,
+      table.versionNumber
+    )
+  })
+);
+
+export const contentWorkflowEvents = pgTable(
+  'content_workflow_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemId: uuid('item_id')
+      .references(() => contentItems.id)
+      .notNull(),
+    actorUserId: uuid('actor_user_id').references(() => users.id),
+    action: varchar('action', { length: 80 }).notNull(),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    itemCreatedIdx: index('content_workflow_events_item_created_idx').on(
+      table.itemId,
+      table.createdAt
+    )
+  })
+);
+
+export const aiSuggestions = pgTable(
+  'ai_suggestions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    contentItemId: uuid('content_item_id').references(() => contentItems.id),
+    kind: aiSuggestionKindEnum('kind').notNull(),
+    input: text('input').notNull(),
+    output: text('output').notNull(),
+    status: varchar('status', { length: 80 }).default('draft').notNull(),
+    createdByUserId: uuid('created_by_user_id').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    contentItemIdx: index('ai_suggestions_content_item_idx').on(table.contentItemId)
   })
 );
 

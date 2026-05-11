@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { ContentDeskClient } from '../components/ContentDeskClient';
 import { AdminSectionView, Hero, RoleMatrix } from '../../components/PageBlocks';
 import { SiteChrome } from '../../components/SiteChrome';
 import { adminSections, getAdminSection, publishingRoles } from '../../data/site';
@@ -44,7 +45,9 @@ export default async function AdminRoutePage({ params }: AdminRouteProps) {
           tone="admin"
         />
 
-        {currentSection ? (
+        {currentSection?.path === 'content' ? (
+          <ContentDeskClient />
+        ) : currentSection ? (
           <AdminSectionView section={currentSection} />
         ) : (
           <section className="band">

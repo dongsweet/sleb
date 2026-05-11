@@ -1,3 +1,4 @@
+import { seedContentItems, seedTechnologyListings, type ContentType } from '@sleb/shared/content';
 import { SiteChrome } from './components/SiteChrome';
 
 const services = [
@@ -41,68 +42,35 @@ const services = [
 ];
 
 const updatePanels = [
-  {
-    title: 'Events',
-    href: '/events',
-    wide: false,
-    items: [
-      {
-        label: 'Frequently Asked Questions About Intelligent Energy Efficiency Calculator',
-        href: '/events/intelligent-energy-efficiency-calculator-faq'
-      },
-      {
-        label: 'IBEW 2021 Returns With Enhanced Digital Format in September',
-        href: '/events/ibew-2021'
-      },
-      {
-        label: 'Pilot Intelligent Energy Efficiency Calculator for Green Mark',
-        href: '/events/pilot-intelligent-energy-efficiency-calculator'
-      }
-    ]
-  },
-  {
-    title: 'News',
-    href: '/news',
-    wide: true,
-    items: [
-      {
-        label: 'Green Mark Super Low Energy Solutions Package',
-        href: '/news/green-mark-super-low-energy-solutions-package'
-      },
-      { label: 'BCA Green Mark 2021 is Refreshed', href: '/news/bca-green-mark-2021' },
-      {
-        label: 'Intelligent Energy Efficiency Calculator for Green Mark',
-        href: '/news/intelligent-energy-efficiency-calculator'
-      }
-    ]
-  },
-  {
-    title: 'Grants',
-    href: '/grants-and-incentives',
-    wide: false,
-    items: [
-      {
-        label: 'Launch of Transnational R&D Challenge Call for Next-Generation Green Building Technologies',
-        href: '/grants-and-incentives/transnational-rd-challenge-call'
-      },
-      {
-        label:
-          '[Closed] Launch of the 3rd Joint Challenge Call by the Building and Construction Authority (BCA) and Enterprise Singapore (ESG)',
-        href: '/grants-and-incentives/joint-challenge-call'
-      }
-    ]
-  },
+  buildContentPanel('Events', 'event', '/events', false),
+  buildContentPanel('News', 'news', '/news', true),
+  buildContentPanel('Grants', 'grant', '/grants-and-incentives', false),
   {
     title: 'Latest Technologies',
     href: '/technologies',
     wide: true,
-    items: [
-      { label: 'Deep Energy AI', href: '/technologies/deep-energy-ai' },
-      { label: 'Chiller Plant Energy Optimization', href: '/technologies/chiller-plant-energy-optimization' },
-      { label: 'Building-attached Photovoltaic System (BaPV)', href: '/technologies/building-attached-photovoltaic-system' }
-    ]
+    items: seedTechnologyListings.map((item) => ({
+      label: item.title,
+      href: item.href
+    }))
   }
 ];
+
+function buildContentPanel(title: string, type: ContentType, href: string, wide: boolean) {
+  return {
+    title,
+    href,
+    wide,
+    items: seedContentItems
+      .filter((item) => item.type === type && item.status === 'published')
+      .sort((a, b) => (b.publishedAt ?? b.updatedAt).localeCompare(a.publishedAt ?? a.updatedAt))
+      .slice(0, 3)
+      .map((item) => ({
+        label: item.title,
+        href: `${href}/${item.slug}`
+      }))
+  };
+}
 
 const aboutPoints = [
   'The Super Low Energy Building (SLEB) Smart Hub aims to be a national digital platform for energy efficiency of built environment. It consists of a variety of databases and software applications in support of the Singapore Green Building Masterplan (SGBMP) target of achieving 80% energy efficiency by 2030.',
