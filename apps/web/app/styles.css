@@ -2543,3 +2543,56 @@ small {
     font-size: 2.35rem;
   }
 }
+
+/* Login Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modalDialog {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  max-width: 400px;
+  width: 100%;
+  padding: 2rem;
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+}
+
+.modalClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modalClose:hover {
+  background: var(--line);
+  color: var(--foreground);
+}
+
+.modalDialog .loginPanel {
+  max-width: 100%;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
