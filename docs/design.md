@@ -3,6 +3,10 @@
 > 目标：复刻 https://sleb.sg/ （Singapore Low Energy Building Smart Hub）
 > 项目根目录：`/home/dq/code/sleb`
 > 当前代码量：38 个源文件，~10,000 行
+>
+> ⚠️ **注意**：本文档为早期架构设计，已于 2026-05-20 合并到 `task-list.md`。
+> 完整的任务清单、优先级和工时请看 [task-list.md](task-list.md)（62 个任务，~231h）。
+> 本文档保留作为参考。
 
 ---
 
